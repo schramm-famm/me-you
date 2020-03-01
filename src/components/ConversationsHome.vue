@@ -6,7 +6,7 @@
 
 <script>
 export default {
-  name: 'CoversationsHome',
+  name: 'ConversationsHome',
 };
 </script>
 

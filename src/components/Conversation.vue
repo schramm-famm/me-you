@@ -15,12 +15,13 @@ const hours = date.getHours() % 12;
 let minutes = date.getMinutes();
 minutes = minutes < 10 ? `0${minutes}` : minutes;
 const meridian = date.getHours() < 11 ? 'A.M.' : 'P.M.';
+
 const data = () => ({
   time: `Today at ${hours}:${minutes} ${meridian}`,
 });
 
 export default {
-  name: 'Coversation',
+  name: 'Conversation',
   data,
 };
 </script>
