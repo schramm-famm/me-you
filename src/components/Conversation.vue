@@ -16,7 +16,7 @@
 
 <script>
 const data = () => ({
-  conversation: null,
+  conversation: {},
 });
 
 function conversations() {
@@ -24,7 +24,7 @@ function conversations() {
 }
 
 function activeConversation() {
-  return this.$store.state.activeConversation;
+  return parseInt(this.$route.params.id, 10);
 }
 
 function created() {

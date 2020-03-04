@@ -89,10 +89,6 @@ function created() {
     preloadImage(conversation.avatar_url);
   });
 
-  if (this.$route.params.id) {
-    this.$store.commit('setActiveConversation', parseInt(this.$route.params.id, 10));
-  }
-
   window.setInterval(() => {
     Object.keys(this.conversations).forEach((id) => {
       const conversation = this.conversations[id];
