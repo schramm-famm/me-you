@@ -1,6 +1,10 @@
 <template>
   <div class="conversations-home">
-    <p>Welcome to riht.</p>
+    <div class="header">
+    </div>
+    <div class="welcome">
+      <p>Welcome to riht.</p>
+    </div>
   </div>
 </template>
 
@@ -11,13 +15,16 @@ export default {
 </script>
 
 <style scoped>
-div {
+.conversations-home {
   display: flex;
   flex: 1;
-  text-align: center;
+  flex-direction: column;
+}
+
+.welcome {
+  display: flex;
+  height: 100%;
   justify-content: center;
-  align-self: center;
-  color: black;
-  font-size: 10pt;
+  align-items: center;
 }
 </style>
