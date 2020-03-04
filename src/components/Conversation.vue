@@ -1,8 +1,13 @@
 <template>
   <div class="conversation">
     <div class="header">
-      <h1>Conversation {{ $route.params.id }}</h1>
-      <h2>{{ time }}</h2>
+      <div class="header-content">
+        <img class="avatar" v-bind:src="conversation.avatar_url">
+        <div>
+          <h1>{{ conversation.name }}</h1>
+          <h2>last modified {{ conversation.last_modified_display }}</h2>
+        </div>
+      </div>
     </div>
     <div id="conversation-body" class="body" contenteditable="true">
     </div>
@@ -10,39 +15,42 @@
 </template>
 
 <script>
-const date = new Date();
-const hours = date.getHours() % 12;
-let minutes = date.getMinutes();
-minutes = minutes < 10 ? `0${minutes}` : minutes;
-const meridian = date.getHours() < 11 ? 'A.M.' : 'P.M.';
-
 const data = () => ({
-  time: `Today at ${hours}:${minutes} ${meridian}`,
+  conversation: null,
 });
+
+function conversations() {
+  return this.$store.state.conversations;
+}
+
+function activeConversation() {
+  return this.$store.state.activeConversation;
+}
+
+function created() {
+  this.conversation = this.conversations[this.activeConversation];
+}
 
 export default {
   name: 'Conversation',
   data,
+  created,
+  computed: {
+    conversations,
+    activeConversation,
+  },
+  watch: {
+    conversations() {
+      this.conversation = this.conversations[this.activeConversation];
+    },
+    activeConversation() {
+      this.conversation = this.conversations[this.activeConversation];
+    },
+  },
 };
 </script>
 
 <style scoped>
-h1 {
-  font-size: 12pt;
-  font-weight: normal;
-  font-style: normal;
-  color: black;
-  margin: 0px;
-}
-
-h2 {
-  font-size: 8pt;
-  font-weight: normal;
-  font-style: normal;
-  color: darkgrey;
-  margin: 0px;
-}
-
 .conversation {
   display: flex;
   flex-direction: column;
@@ -50,22 +58,10 @@ h2 {
   overflow: hidden;
 }
 
-.header {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  height: 3em;
-  background-color: white;
-  border: solid lightgrey;
-  border-width: 0px 0px thin;
-  padding: 0px 1em;
-}
-
 .body {
   display: inline-block;
   color: black;
-  font-size: 10pt;
+  font-size: 12pt;
   padding: 1em;
   height: 100%;
   overflow-y: scroll;
