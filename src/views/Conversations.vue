@@ -39,7 +39,7 @@ const getDisplayTime = (lastModifiedStr) => {
         return 'several minutes ago';
       }
 
-      const meridian = lmHours < 11 ? 'A.M.' : 'P.M.';
+      const meridian = lmHours < 12 ? 'A.M.' : 'P.M.';
       const hours = lmHours === 0 ? 12 : lmHours % 12;
       const minutes = lmMinutes < 10 ? `0${lmMinutes}` : lmMinutes;
 
