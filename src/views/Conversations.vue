@@ -66,6 +66,9 @@ function created() {
 
   this.$store.commit('setUser', user);
 
+  // TODO: Token should be set when user logs in
+  this.$store.commit('setToken', 'token');
+
   // TODO: Add API call to get all conversations for the user
   const conversationsList = [
     {
@@ -88,10 +91,6 @@ function created() {
     this.$store.commit('addConversation', updatedConversation);
     preloadImage(conversation.avatar_url);
   });
-
-  if (this.$route.params.id) {
-    this.$store.commit('setActiveConversation', parseInt(this.$route.params.id, 10));
-  }
 
   window.setInterval(() => {
     Object.keys(this.conversations).forEach((id) => {

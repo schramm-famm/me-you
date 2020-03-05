@@ -16,13 +16,12 @@ const data = () => ({
 
 function setConversation() {
   if (this.activeConversation !== this.$props.id) {
-    this.$store.commit('setActiveConversation', this.$props.id);
     this.$router.push(`/conversations/${this.$props.id}`);
   }
 }
 
 function activeConversation() {
-  return this.$store.state.activeConversation;
+  return parseInt(this.$route.params.id, 10);
 }
 
 function conversations() {

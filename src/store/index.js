@@ -6,15 +6,15 @@ Vue.use(Vuex);
 export default new Vuex.Store({
   state: {
     user: null,
-    activeConversation: null,
+    token: '',
     conversations: {},
   },
   mutations: {
     setUser(state, user) {
       state.user = user;
     },
-    setActiveConversation(state, id) {
-      state.activeConversation = id;
+    setToken(state, token) {
+      state.token = token;
     },
     addConversation(state, conversation) {
       state.conversations[conversation.id] = conversation;
