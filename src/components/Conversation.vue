@@ -38,7 +38,7 @@ const data = () => ({
   ws: null,
   conversation: {},
   checkpoint: '',
-  version: 0,
+  version: -1,
   content: '',
   patchBuffer: [],
 });
@@ -103,7 +103,7 @@ function parseWSMessage(e) {
     return;
   }
 
-  if ('content' in msg) { // Initial message
+  if (this.version === -1) { // Initial message
     const missingProps = checkMsgProps(msg, initialProps);
     if (missingProps.length > 0) {
       const errMsg = `Initial message missing required fields: ${missingProps.join()}`;
@@ -114,7 +114,7 @@ function parseWSMessage(e) {
     this.version = msg.version;
     this.content = this.checkpoint;
     this.conversationDOM.innerHTML = this.content;
-  } else if ('type' in msg) {
+  } else {
     const missingProps = checkMsgProps(msg, updateProps);
     if (missingProps.length > 0) {
       const errMsg = `Update message missing required fields: ${missingProps.join()}`;
