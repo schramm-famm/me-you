@@ -23,11 +23,17 @@
 import DiffMatchPatch from 'diff-match-patch';
 
 // Declare constants
-const initialProps = Object.freeze(['content', 'version']);
-const updateProps = Object.freeze(['type', 'version', 'patch', 'cursor_delta']);
+const msgTypes = Object.freeze({
+  Init: 0,
+  Update: 1,
+  Ack: 2,
+});
 const updateTypes = Object.freeze({
   Edit: 0,
 });
+const initialProps = Object.freeze(['content', 'version']);
+const updateProps = Object.freeze(['type', 'version', 'patch', 'cursor_delta']);
+const ackProps = Object.freeze(['version']);
 
 const GOING_AWAY = 4001;
 const INVALID_PAYLOAD_DATA = 4007;
@@ -55,9 +61,25 @@ const checkMsgProps = (msg, requiredProps) => {
   return missingProps;
 };
 
+const debugLog = (msg) => {
+  if (process.env.VUE_APP_DEBUG === 'true') {
+    console.log(msg);
+  }
+};
+
 function MissingPropsException(msg) {
   this.message = msg;
   this.code = INVALID_PAYLOAD_DATA;
+}
+
+function FailedAckException(msg) {
+  this.message = msg;
+  this.code = INTERNAL_ERROR;
+}
+
+function Message(type, msgData) {
+  this.type = type;
+  this.data = msgData;
 }
 
 function token() {
@@ -81,18 +103,98 @@ function sendPatch() {
       return;
     }
 
-    const msg = {
+    const update = {
       type: updateTypes.Edit,
       version: this.version,
       patch: patchStr,
       cursor_delta: 0,
     };
 
+    const msg = new Message(msgTypes.Update, update);
+
     this.patchBuffer.push(patchStr);
     this.ws.send(JSON.stringify(msg));
+    debugLog('Sent:');
+    debugLog(msg);
   });
 
   this.content = this.conversationDOM.innerHTML;
+}
+
+function handleInitMsg(msg) {
+  const missingProps = checkMsgProps(msg, initialProps);
+  if (missingProps.length > 0) {
+    const errMsg = `Initial message missing required fields: ${missingProps.join()}`;
+    throw new MissingPropsException(errMsg);
+  }
+
+  this.checkpoint = msg.content;
+  this.version = msg.version;
+  this.content = this.checkpoint;
+  this.conversationDOM.innerHTML = this.content;
+}
+
+function handleUpdateMsg(msg) {
+  const missingProps = checkMsgProps(msg, updateProps);
+  if (missingProps.length > 0) {
+    const errMsg = `Update message missing required fields: ${missingProps.join()}`;
+    throw new MissingPropsException(errMsg);
+  }
+
+  switch (msg.type) {
+    case updateTypes.Edit: {
+      const msgPatch = dmp.patch_fromText(msg.patch);
+      let content = '';
+      let versionDelta = 1;
+
+      [content] = dmp.patch_apply(msgPatch, this.checkpoint);
+      this.checkpoint = content;
+
+      if (msg.version <= this.version) {
+        let i = 0;
+
+        while (i < this.patchBuffer.length) {
+          const patch = dmp.patch_fromText(this.patchBuffer[i]);
+          const [updatedContent, results] = dmp.patch_apply(patch, content);
+
+          if (!results[0]) {
+            this.patchBuffer.splice(i, 1);
+            versionDelta -= 1;
+          } else {
+            content = updatedContent;
+            i += 1;
+          }
+        }
+      } else if (msg.version === this.version + 1) {
+        this.patchBuffer = [];
+      }
+
+      this.version += versionDelta;
+      this.content = content;
+      this.conversationDOM.innerHTML = this.content;
+      break;
+    }
+    default:
+      console.log(`Invalid update type: ${msg.type}`);
+  }
+}
+
+function handleAckMsg(msg) {
+  const missingProps = checkMsgProps(msg, ackProps);
+  if (missingProps.length > 0) {
+    const errMsg = `Update message missing required fields: ${missingProps.join()}`;
+    throw new MissingPropsException(errMsg);
+  }
+
+  const patch = dmp.patch_fromText(this.patchBuffer[0]);
+  let ok = false;
+  [this.checkpoint, ok] = dmp.patch_apply(patch, this.checkpoint);
+  if (!ok) {
+    const errMsg = 'Failed to apply acknowledged patch';
+    throw new FailedAckException(errMsg);
+  }
+
+  this.patchBuffer.splice(0, 1);
 }
 
 function parseWSMessage(e) {
@@ -104,60 +206,21 @@ function parseWSMessage(e) {
     return;
   }
 
-  if (this.version === -1) { // Initial message
-    const missingProps = checkMsgProps(msg, initialProps);
-    if (missingProps.length > 0) {
-      const errMsg = `Initial message missing required fields: ${missingProps.join()}`;
-      throw new MissingPropsException(errMsg);
-    }
+  debugLog('Received:');
+  debugLog(msg);
 
-    this.checkpoint = msg.content;
-    this.version = msg.version;
-    this.content = this.checkpoint;
-    this.conversationDOM.innerHTML = this.content;
-  } else {
-    const missingProps = checkMsgProps(msg, updateProps);
-    if (missingProps.length > 0) {
-      const errMsg = `Update message missing required fields: ${missingProps.join()}`;
-      throw new MissingPropsException(errMsg);
-    }
-
-    switch (msg.type) {
-      case updateTypes.Edit: {
-        const msgPatch = dmp.patch_fromText(msg.patch);
-        let content = '';
-        let versionDelta = 1;
-
-        if (msg.version <= this.version) {
-          [content] = dmp.patch_apply(msgPatch, this.checkpoint);
-          let i = 0;
-
-          while (i < this.patchBuffer.length) {
-            const patch = dmp.patch_fromText(this.patchBuffer[i]);
-            const [updatedContent, results] = dmp.patch_apply(patch, content);
-
-            if (!results[0]) {
-              this.patchBuffer.splice(i, 1);
-              versionDelta -= 1;
-            } else {
-              content = updatedContent;
-              i += 1;
-            }
-          }
-        } else if (msg.version === this.version + 1) {
-          [content] = dmp.patch_apply(msgPatch, this.conversationDOM.innerHTML);
-          this.checkpoint = content;
-          this.patchBuffer = [];
-        }
-
-        this.version += versionDelta;
-        this.content = content;
-        this.conversationDOM.innerHTML = this.content;
-        break;
-      }
-      default:
-        console.log(`Invalid update type: ${msg.type}`);
-    }
+  switch (msg.type) {
+    case msgTypes.Init:
+      this.handleInitMsg(msg.data);
+      break;
+    case msgTypes.Update:
+      this.handleUpdateMsg(msg.data);
+      break;
+    case msgTypes.Ack:
+      this.handleAckMsg(msg.data);
+      break;
+    default:
+      console.log(`Invalid message type: ${msg.type}`);
   }
 }
 
@@ -173,8 +236,8 @@ function connectWebSocket() {
     console.log(`OPEN CONVERSATION_${this.activeConversation} WS`);
     this.ws.send(this.token);
   };
-  this.ws.onclose = () => {
-    console.log(`CLOSE CONVERSATION_${this.conversation.id} WS`);
+  this.ws.onclose = (e) => {
+    console.log(`Closing WebSocket connection for conversation ${this.conversation.id}: ${e.reason}`);
     this.content = '';
     this.conversationDOM.innerHTML = this.content;
     this.checkpoint = this.content;
@@ -186,8 +249,11 @@ function connectWebSocket() {
     try {
       this.parseWSMessage(e);
     } catch (err) {
-      console.log(err.message);
-      if (e instanceof MissingPropsException) {
+      console.log(`Failed to parse WebSocket message: ${err.message}`);
+      if (
+        e instanceof MissingPropsException
+        || e instanceof FailedAckException
+      ) {
         this.ws.close(err.code, err.message);
       } else {
         this.ws.close(INTERNAL_ERROR, err.message);
@@ -230,6 +296,9 @@ export default {
   },
   methods: {
     sendPatch,
+    handleInitMsg,
+    handleUpdateMsg,
+    handleAckMsg,
     parseWSMessage,
     connectWebSocket,
   },
