@@ -29,6 +29,9 @@ const updateTypes = Object.freeze({
   Edit: 0,
 });
 
+const INVALID_PAYLOAD_DATA = 1007;
+const INTERNAL_ERROR = 1011;
+
 const dmp = new DiffMatchPatch();
 
 const data = () => ({
@@ -48,8 +51,13 @@ const checkMsgProps = (msg, requiredProps) => {
     }
   });
 
-  return missingProps.join();
+  return missingProps;
 };
+
+function MissingPropsException(msg) {
+  this.message = msg;
+  this.code = INVALID_PAYLOAD_DATA;
+}
 
 function token() {
   return this.$store.state.token;
@@ -97,17 +105,20 @@ function parseWSMessage(e) {
 
   if ('content' in msg) { // Initial message
     const missingProps = checkMsgProps(msg, initialProps);
-    if (missingProps !== '') {
-      console.log(`Initial message missing required fields: ${missingProps}`);
+    if (missingProps.length > 0) {
+      const errMsg = `Initial message missing required fields: ${missingProps.join()}`;
+      throw new MissingPropsException(errMsg);
     }
+
     this.checkpoint = msg.content;
     this.version = msg.version;
     this.content = this.checkpoint;
     this.conversationDOM.innerHTML = this.content;
   } else if ('type' in msg) {
     const missingProps = checkMsgProps(msg, updateProps);
-    if (missingProps !== '') {
-      console.log(`Update message missing required fields: ${missingProps}`);
+    if (missingProps.length > 0) {
+      const errMsg = `Update message missing required fields: ${missingProps.join()}`;
+      throw new MissingPropsException(errMsg);
     }
 
     switch (msg.type) {
@@ -167,7 +178,16 @@ function created() {
     this.ws = null;
   };
   this.ws.onmessage = (e) => {
-    this.parseWSMessage(e);
+    try {
+      this.parseWSMessage(e);
+    } catch (err) {
+      console.log(err.message);
+      if (e instanceof MissingPropsException) {
+        this.ws.close(err.code, err.message);
+      } else {
+        this.ws.close(INTERNAL_ERROR, err.message);
+      }
+    }
   };
   this.ws.onerror = (e) => {
     console.log(`ERROR: ${e.data}`);
