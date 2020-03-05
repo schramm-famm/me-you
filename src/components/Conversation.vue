@@ -29,8 +29,9 @@ const updateTypes = Object.freeze({
   Edit: 0,
 });
 
-const INVALID_PAYLOAD_DATA = 1007;
-const INTERNAL_ERROR = 1011;
+const GOING_AWAY = 4001;
+const INVALID_PAYLOAD_DATA = 4007;
+const INTERNAL_ERROR = 4011;
 
 const dmp = new DiffMatchPatch();
 
@@ -160,8 +161,7 @@ function parseWSMessage(e) {
   }
 }
 
-function created() {
-  this.conversation = this.conversations[this.activeConversation];
+function connectWebSocket() {
   try {
     this.ws = new WebSocket(`ws://${process.env.VUE_APP_HOST}/patches/v1/connect/${this.activeConversation}`);
   } catch (err) {
@@ -170,12 +170,17 @@ function created() {
   }
 
   this.ws.onopen = () => {
-    console.log('OPEN WS');
+    console.log(`OPEN CONVERSATION_${this.activeConversation} WS`);
     this.ws.send(this.token);
   };
   this.ws.onclose = () => {
-    console.log('CLOSE WS');
-    this.ws = null;
+    console.log(`CLOSE CONVERSATION_${this.conversation.id} WS`);
+    this.content = '';
+    this.conversationDOM.innerHTML = this.content;
+    this.checkpoint = this.content;
+    this.version = -1;
+    this.patchBuffer = [];
+    this.conversation = this.conversations[this.activeConversation];
   };
   this.ws.onmessage = (e) => {
     try {
@@ -192,6 +197,11 @@ function created() {
   this.ws.onerror = (e) => {
     console.log(`ERROR: ${e.data}`);
   };
+}
+
+function created() {
+  this.conversation = this.conversations[this.activeConversation];
+  this.connectWebSocket();
 }
 
 function mounted() {
@@ -214,12 +224,14 @@ export default {
       this.conversation = this.conversations[this.activeConversation];
     },
     activeConversation() {
-      this.conversation = this.conversations[this.activeConversation];
+      this.ws.close(GOING_AWAY);
+      this.connectWebSocket();
     },
   },
   methods: {
     sendPatch,
     parseWSMessage,
+    connectWebSocket,
   },
 };
 </script>
