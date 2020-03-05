@@ -33,6 +33,28 @@ installed, then you have npm installed already as well. To check, you can run
 Vue CLI is the command line interface provided by Vue.js to allow for rapid
 Vue.js development. It can be installed by running `npm install -g @vue/cli`.
 
+### Environment Variables
+
+#### `VUE_APP_BACKEND`
+The environment variable `VUE_APP_BACKEND` must be set for the front-end to
+connect to the back-end. It should be set in a `.env.development.local` file in
+the project root. The `.development` suffix specifies that the variables set in
+the file should only be used in a development environment and the `.local`
+suffix specifies that it should be ignored by git. For example, the content of
+your `.env.development.local` file can look like the following:
+
+```
+VUE_APP_BACKEND=localhost:80
+```
+
+#### `VUE_APP_DEBUG`
+This environment variable can be set to `true` to allow debug logs. Example:
+
+```
+VUE_APP_BACKEND=localhost:80
+VUE_APP_DEBUG=true
+```
+
 ### Initial Set-Up
 When the repository is first cloned, `npm i` should be run to get all of the
 repository's development dependencies.

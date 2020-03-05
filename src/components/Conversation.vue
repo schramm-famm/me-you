@@ -226,7 +226,7 @@ function parseWSMessage(e) {
 
 function connectWebSocket() {
   try {
-    this.ws = new WebSocket(`ws://${process.env.VUE_APP_HOST}/patches/v1/connect/${this.activeConversation}`);
+    this.ws = new WebSocket(`ws://${process.env.VUE_APP_BACKEND}/patches/v1/connect/${this.activeConversation}`);
   } catch (err) {
     console.log(`Unable to create WebSocket connection: ${err.message}`);
     return;
