@@ -51,6 +51,10 @@ const checkMsgProps = (msg, requiredProps) => {
   return missingProps.join();
 };
 
+function token() {
+  return this.$store.state.token;
+}
+
 function conversations() {
   return this.$store.state.conversations;
 }
@@ -156,7 +160,7 @@ function created() {
 
   this.ws.onopen = () => {
     console.log('OPEN WS');
-    this.ws.send('blah');
+    this.ws.send(this.token);
   };
   this.ws.onclose = () => {
     console.log('CLOSE WS');
@@ -181,6 +185,7 @@ export default {
   created,
   mounted,
   computed: {
+    token,
     conversations,
     activeConversation,
   },

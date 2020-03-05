@@ -66,6 +66,9 @@ function created() {
 
   this.$store.commit('setUser', user);
 
+  // TODO: Token should be set when user logs in
+  this.$store.commit('setToken', 'token');
+
   // TODO: Add API call to get all conversations for the user
   const conversationsList = [
     {
