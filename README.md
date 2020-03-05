@@ -2,6 +2,15 @@
 🎨 User interface for Riht. Vue.js is used as the front-end framework with
 Vuex and vue-router as the state management and routing libraries.
 
+## Endpoints
+
+### `/conversations`
+The main view for the user's conversations. It shows the list of conversations
+in a side pane.
+
+### `/conversations/:id`
+This opens the conversation specified by the `id` parameter.
+
 ## Development
 
 ### Dependencies
@@ -27,3 +36,9 @@ Vue.js development. It can be installed by running `npm install -g @vue/cli`.
 ### Initial Set-Up
 When the repository is first cloned, `npm i` should be run to get all of the
 repository's development dependencies.
+
+### Building the project
+
+* `npm run serve`: Starts a dev server
+* `npm run build`: Produces a production-ready bundle in the dist/ directory
+* `npm run lint`: Runs the linter on your project
