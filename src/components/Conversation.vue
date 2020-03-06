@@ -245,7 +245,19 @@ function sendPatch() {
 
     const cursorPosition = getCaretPosition(this.conversationDOM);
     const cursorDelta = cursorPosition - this.cursorPosition;
+
+    Object.keys(this.activeUsers).forEach((user) => {
+      if (
+        this.activeUsers[user] > this.cursorPosition
+        || (this.activeUsers[user] >= this.cursorPosition && cursorDelta < 0)
+      ) {
+        this.activeUsers[user] += cursorDelta;
+      }
+    });
+
     this.cursorPosition = cursorPosition;
+    debugLog(`Cursor position: ${this.cursorPosition}`);
+    debugLog(this.activeUsers);
 
     const update = new Update(
       updateTypes.Edit,
@@ -270,6 +282,7 @@ function sendCursorUpdate() {
   const cursorPosition = getCaretPosition(this.conversationDOM);
   const cursorDelta = cursorPosition - this.cursorPosition;
   this.cursorPosition = cursorPosition;
+  debugLog(`Cursor position: ${this.cursorPosition}`);
 
   const update = new Update(updateTypes.Cursor, cursorDelta);
   const msg = new Message(msgTypes.Update, update);
@@ -322,7 +335,13 @@ function handleUpdateEdit(msg) {
 
   let [content] = dmp.patch_apply(msgPatch, this.checkpoint);
   this.checkpoint = content;
-  if (this.activeUsers[msg.user_id] < this.cursorPosition) {
+
+  const cursorAffected = (
+    this.activeUsers[msg.user_id] < this.cursorPosition
+    || (this.activeUsers[msg.user_id] <= this.cursorPosition && msg.cursor_delta < 0)
+  );
+
+  if (cursorAffected) {
     cursorDelta += msg.cursor_delta;
   }
 
@@ -339,7 +358,9 @@ function handleUpdateEdit(msg) {
         versionDelta -= 1;
       } else {
         content = updatedContent;
-        cursorDelta += patchCursorDelta;
+        if (cursorAffected) {
+          cursorDelta += patchCursorDelta;
+        }
         i += 1;
       }
     }
@@ -352,7 +373,9 @@ function handleUpdateEdit(msg) {
 
   this.version += versionDelta;
   this.cursorPosition += cursorDelta;
+  debugLog(`Cursor position: ${this.cursorPosition}`);
   this.activeUsers[msg.user_id] += msg.cursor_delta;
+  debugLog(this.activeUsers);
   this.content = content;
   this.conversationDOM.innerHTML = this.content;
 
@@ -374,6 +397,7 @@ function handleUpdateCursor(msg) {
   }
 
   this.activeUsers[msg.user_id] += msg.cursor_delta;
+  debugLog(this.activeUsers);
 }
 
 function handleUpdateMsg(msg) {
