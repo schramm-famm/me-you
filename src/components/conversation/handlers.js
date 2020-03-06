@@ -1,190 +1,28 @@
-<template>
-  <div class="conversation">
-    <div class="header">
-      <div class="header-content">
-        <img class="avatar" v-bind:src="conversation.avatar_url">
-        <div>
-          <h1>{{ conversation.name }}</h1>
-          <h2>last modified {{ conversation.last_modified_display }}</h2>
-        </div>
-      </div>
-    </div>
-    <div
-      id="conversation-body"
-      class="body"
-      contenteditable="true"
-      v-on:input="sendPatch"
-      v-on:keyup="handleKeyUp"
-      v-on:mouseup="sendCursorUpdate"
-    >
-    </div>
-  </div>
-</template>
-
-<script>
 import DiffMatchPatch from 'diff-match-patch';
 
-// WebSocket message constants
-const msgTypes = Object.freeze({
-  Init: 0,
-  Update: 1,
-  Ack: 2,
-  UserJoin: 3,
-  UserLeave: 4,
-});
-const updateTypes = Object.freeze({
-  Edit: 0,
-  Cursor: 1,
-});
-const initialProps = Object.freeze(['content', 'version']);
-const editProps = Object.freeze(['type', 'user_id', 'cursor_delta', 'version', 'patch']);
-const cursorProps = Object.freeze(['type', 'user_id', 'cursor_delta']);
-const ackProps = Object.freeze(['version']);
-const userActionProps = Object.freeze(['user_id']);
-
-// WebSocket error codes
-const GOING_AWAY = 4001;
-const INVALID_PAYLOAD_DATA = 4007;
-const INTERNAL_ERROR = 4011;
-
-// Key values
-const ARROW_DOWN = 'ArrowDown';
-const ARROW_LEFT = 'ArrowLeft';
-const ARROW_RIGHT = 'ArrowRight';
-const ARROW_UP = 'ArrowUp';
-const END = 'End';
-const HOME = 'Home';
-const PAGE_DOWN = 'PageDown';
-const PAGE_UP = 'PageUp';
+import { getCaretPosition, getCaretData, setCaretPosition } from './cursor';
+import {
+  msgTypes,
+  updateTypes,
+  initialProps,
+  editProps,
+  cursorProps,
+  ackProps,
+  userActionProps,
+  INVALID_PAYLOAD_DATA,
+  INTERNAL_ERROR,
+  ARROW_DOWN,
+  ARROW_LEFT,
+  ARROW_RIGHT,
+  ARROW_UP,
+  END,
+  HOME,
+  PAGE_DOWN,
+  PAGE_UP,
+} from './constants';
+import { debugLog, checkProps } from '../../utils';
 
 const dmp = new DiffMatchPatch();
-
-const data = () => ({
-  ws: null,
-  conversation: {},
-  checkpoint: '',
-  version: -1,
-  content: '',
-  patchBuffer: [],
-  activeUsers: {},
-  cursorPosition: 0,
-});
-
-/*
-  Checks if the message has the required properties.
-  Parameters:
-    msg, object: the payload of a message received from the WebSocket connection
-    requiredProps, string[]: the required properties for the payload type
-  Returns: string[], the properties that are missing
-*/
-const checkMsgProps = (msg, requiredProps) => {
-  const missingProps = [];
-  requiredProps.forEach((prop) => {
-    if (!(prop in msg)) {
-      missingProps.push(prop);
-    }
-  });
-
-  return missingProps;
-};
-
-/*
-  Gets the current position of the caret.
-  Parameters:
-    el, DOM Element: the element that the caret is in
-  Returns: int, the position of the caret
-*/
-const getCaretPosition = (el) => {
-  let caretOffset = 0;
-  const doc = el.ownerDocument || el.document;
-  const win = doc.defaultView || doc.parentWindow;
-  let sel;
-  if (win.getSelection !== undefined) {
-    sel = win.getSelection();
-    if (sel.rangeCount > 0) {
-      const range = win.getSelection().getRangeAt(0);
-      const preCaretRange = range.cloneRange();
-      preCaretRange.selectNodeContents(el);
-      preCaretRange.setEnd(range.endContainer, range.endOffset);
-      caretOffset = preCaretRange.toString().length;
-    }
-  } else if (sel === doc.selection && sel.type !== 'Control') {
-    const textRange = sel.createRange();
-    const preCaretTextRange = doc.body.createTextRange();
-    preCaretTextRange.moveToElementText(el);
-    preCaretTextRange.setEndPoint('EndToEnd', textRange);
-    caretOffset = preCaretTextRange.text.length;
-  }
-  return caretOffset;
-};
-
-/*
-  Gets all of the nodes within the given DOM Element that contain text.
-  Parameters:
-    el, DOM Element: the element to traverse
-  Returns: Node[], list of all text nodes within el
-*/
-const getAllTextNodes = (el) => {
-  const a = [];
-  const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
-  let n = walk.nextNode();
-  while (n) {
-    a.push(n);
-    n = walk.nextNode();
-  }
-  return a;
-};
-
-/*
-  Determines the node and offset within the node of the given position.
-  Parameters:
-    el, DOM Element: the element that contains the caret
-    position, int: the desired position
-  Returns:  Object{node, offset}, where node is the Node that the position is
-            in and offset is the position within the element
-*/
-const getCaretData = (el, position) => {
-  let node;
-  let offset = position;
-  const nodes = getAllTextNodes(el);
-
-  for (let n = 0; n < nodes.length; n += 1) {
-    if (offset > nodes[n].nodeValue.length && nodes[n + 1]) {
-      // remove amount from the position, go to next node
-      offset -= nodes[n].nodeValue.length;
-    } else {
-      node = nodes[n];
-      break;
-    }
-  }
-
-  return { node, offset };
-};
-
-/*
-  Sets the caret position.
-  Parameters:
-    d, Object{node, offset}: where node is the Node that contains the caret and
-      offset is the position within the Node
-    el, DOM Element: the element that contains the Node
-    position, int: the desired position
-*/
-const setCaretPosition = (d, el) => {
-  const doc = el.ownerDocument || el.document;
-  const win = doc.defaultView || doc.parentWindow;
-  const sel = win.getSelection();
-  const range = doc.createRange();
-  range.setStart(d.node, d.offset);
-  range.collapse(true);
-  sel.removeAllRanges();
-  sel.addRange(range);
-};
-
-const debugLog = (msg) => {
-  if (process.env.VUE_APP_DEBUG === 'true') {
-    console.log(msg);
-  }
-};
 
 /* WebSocket exception objects */
 function InvalidDataException(msg) {
@@ -219,20 +57,6 @@ function Update(type, cursorDelta, version, patch) {
   }
 }
 
-/* Vue instance computed functions */
-function token() {
-  return this.$store.state.token;
-}
-
-function conversations() {
-  return this.$store.state.conversations;
-}
-
-function activeConversation() {
-  return parseInt(this.$route.params.id, 10);
-}
-
-/* Vue instance methods */
 function sendPatch() {
   const patches = dmp.patch_make(this.content, this.conversationDOM.innerHTML);
   patches.forEach((patch) => {
@@ -293,8 +117,20 @@ function sendCursorUpdate() {
   this.ws.send(JSON.stringify(msg));
 }
 
+function handleKeyUp(e) {
+  if ( // Not navigation key
+    e.key !== ARROW_UP && e.key !== ARROW_DOWN && e.key !== ARROW_LEFT
+    && e.key !== ARROW_RIGHT && e.key !== HOME && e.key !== END
+    && e.key !== PAGE_UP && e.key !== PAGE_DOWN
+  ) {
+    return;
+  }
+
+  this.sendCursorUpdate();
+}
+
 function handleInitMsg(msg) {
-  const missingProps = checkMsgProps(msg, initialProps);
+  const missingProps = checkProps(msg, initialProps);
   if (missingProps.length > 0) {
     const errMsg = `Initial message missing required fields: ${missingProps.join()}`;
     throw new InvalidDataException(errMsg);
@@ -310,20 +146,8 @@ function handleInitMsg(msg) {
   this.conversationDOM.innerHTML = this.content;
 }
 
-function handleKeyUp(e) {
-  if ( // Not navigation key
-    e.key !== ARROW_UP && e.key !== ARROW_DOWN && e.key !== ARROW_LEFT
-    && e.key !== ARROW_RIGHT && e.key !== HOME && e.key !== END
-    && e.key !== PAGE_UP && e.key !== PAGE_DOWN
-  ) {
-    return;
-  }
-
-  this.sendCursorUpdate();
-}
-
 function handleUpdateEdit(msg) {
-  const missingProps = checkMsgProps(msg, editProps);
+  const missingProps = checkProps(msg, editProps);
   if (missingProps.length > 0) {
     const errMsg = `Update message missing required fields: ${missingProps.join()}`;
     throw new InvalidDataException(errMsg);
@@ -390,7 +214,7 @@ function handleUpdateEdit(msg) {
 }
 
 function handleUpdateCursor(msg) {
-  const missingProps = checkMsgProps(msg, cursorProps);
+  const missingProps = checkProps(msg, cursorProps);
   if (missingProps.length > 0) {
     const errMsg = `Update message missing required fields: ${missingProps.join()}`;
     throw new InvalidDataException(errMsg);
@@ -421,7 +245,7 @@ function handleUpdateMsg(msg) {
 }
 
 function handleAckMsg(msg) {
-  const missingProps = checkMsgProps(msg, ackProps);
+  const missingProps = checkProps(msg, ackProps);
   if (missingProps.length > 0) {
     const errMsg = `Ack message missing required fields: ${missingProps.join()}`;
     throw new InvalidDataException(errMsg);
@@ -439,7 +263,7 @@ function handleAckMsg(msg) {
 }
 
 function handleUserJoinMsg(msg) {
-  const missingProps = checkMsgProps(msg, userActionProps);
+  const missingProps = checkProps(msg, userActionProps);
   if (missingProps.length > 0) {
     const errMsg = `UserJoin message missing required fields: ${missingProps.join()}`;
     throw new InvalidDataException(errMsg);
@@ -449,7 +273,7 @@ function handleUserJoinMsg(msg) {
 }
 
 function handleUserLeaveMsg(msg) {
-  const missingProps = checkMsgProps(msg, userActionProps);
+  const missingProps = checkProps(msg, userActionProps);
   if (missingProps.length > 0) {
     const errMsg = `UserLeave message missing required fields: ${missingProps.join()}`;
     throw new InvalidDataException(errMsg);
@@ -535,36 +359,7 @@ function connectWebSocket() {
   };
 }
 
-/* Vue instance lifecycle hooks */
-function created() {
-  this.conversation = this.conversations[this.activeConversation];
-  this.connectWebSocket();
-}
-
-function mounted() {
-  this.conversationDOM = this.$el.querySelector('#conversation-body');
-  this.conversationDOM.innerHTML = this.content;
-}
-
 export default {
-  name: 'Conversation',
-  data,
-  created,
-  mounted,
-  computed: {
-    token,
-    conversations,
-    activeConversation,
-  },
-  watch: {
-    conversations() {
-      this.conversation = this.conversations[this.activeConversation];
-    },
-    activeConversation() {
-      this.ws.close(GOING_AWAY);
-      this.connectWebSocket();
-    },
-  },
   methods: {
     sendPatch,
     sendCursorUpdate,
@@ -580,29 +375,3 @@ export default {
     connectWebSocket,
   },
 };
-</script>
-
-<style scoped>
-.conversation {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  overflow: hidden;
-}
-
-.body {
-  display: inline-block;
-  color: black;
-  font-size: 12pt;
-  padding: 1em;
-  height: 100%;
-  overflow-y: scroll;
-  word-wrap: break-word;
-  word-break: break-all;
-  white-space: pre-wrap;
-}
-
-.body:focus {
-  outline: 0px solid transparent;
-}
-</style>
