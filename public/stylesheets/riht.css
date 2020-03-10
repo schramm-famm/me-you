@@ -1,0 +1,73 @@
+:root{
+  --offwhite: #f0f0f0;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'Lato', sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0px;
+}
+
+h1 {
+  font-size: 14pt;
+  font-weight: normal;
+  font-style: normal;
+  color: black;
+  margin: 0px;
+}
+
+h2 {
+  font-size: 10pt;
+  font-weight: normal;
+  font-style: normal;
+  color: darkgrey;
+  margin: 0px;
+}
+
+#app {
+  display: flex;
+  height: 100%;
+  min-height: 100%;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  height: 3em;
+  min-height: 3em;
+  max-height: 3em;
+  background-color: var(--offwhite);
+  border: solid lightgrey;
+  border-width: 0px 0px thin;
+  font-size: 14pt;
+  padding: 0.5em;
+  width: 100%;
+}
+
+.header-content {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+
+.header-content *:not(:last-child) {
+  margin-right: .5em;
+}
+
+.avatar {
+  max-width: 2.5em;
+  --web-kit-clip-path: circle(1em at center);
+  clip-path: circle(1em at center);
+}
+
+.active {
+  background-color: var(--offwhite);
+}
