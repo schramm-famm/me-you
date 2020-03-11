@@ -64,3 +64,72 @@ repository's development dependencies.
 * `npm run serve`: Starts a dev server
 * `npm run build`: Produces a production-ready bundle in the dist/ directory
 * `npm run lint`: Runs the linter on your project
+
+### Project
+The important files and folders for developing `me-you` are shown below.
+```
+me-you/
+|-- package.json
+|-- public/
+    |-- img/
+    |-- stylesheets/
+    |-- index.html
+|-- src/
+    |-- assets/
+    |-- components/
+        |-- ...
+    |-- router/
+        |-- index.js
+    |-- store/
+        |-- index.js
+    |-- views/
+        |-- ...
+    |-- App.vue
+    |-- main.js
+    |-- utils.js
+```
+
+#### `package.json`
+The `package.json` file of a `Node.js` project holds the all of the metadata
+related to the project, including its name and dependancies. More information on
+the different configuration fields can be found
+[here](https://docs.npmjs.com/files/package.json).
+
+#### `public/`
+This folder holds all of the files that will be served to the client.
+
+#### `public/stylesheets/`
+This folder holds the `.css` files for the project.
+
+#### `public/index.html`
+This file is the base file served to the client that Vue.js will inject HTML
+into.
+
+#### `src/`
+This folder holds the source code for the project that should not be served to
+the client.
+
+#### `src/assets/`
+This folder holds static assets that the source code needs.
+
+#### `src/components/`
+This folder contains the reusable Vue.js components.
+
+#### `src/router/index.js`
+This file defines the routes for the app and exports the router.
+
+#### `src/store/index.js`
+This file defines and exports the state management store.
+
+#### `src/views/`
+This folder contains the views for the different routes of the app.
+
+#### `App.vue`
+This file defines the base component that will be injected into the `index.html`
+file.
+
+#### `main.js`
+This is the entry point for when the project is built.
+
+#### `utils.js`
+This file holds generic methods that can be used by many different files.
