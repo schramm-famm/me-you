@@ -23,7 +23,7 @@
 
 <script>
 import handlers from './handlers';
-import { GOING_AWAY } from './constants';
+import { GOING_AWAY, userColours } from './constants';
 
 const data = () => ({
   ws: null,
@@ -34,6 +34,7 @@ const data = () => ({
   patchBuffer: [],
   activeUsers: {},
   cursorPosition: 0,
+  colourList: userColours.slice(),
 });
 
 /* Vue instance computed functions */
@@ -52,12 +53,11 @@ function activeConversation() {
 /* Vue instance lifecycle hooks */
 function created() {
   this.conversation = this.conversations[this.activeConversation];
-  this.connectWebSocket();
 }
 
 function mounted() {
   this.conversationDOM = this.$el.querySelector('#conversation-body');
-  this.conversationDOM.innerHTML = this.content;
+  this.connectWebSocket();
 }
 
 export default {

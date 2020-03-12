@@ -74,24 +74,56 @@ const getCaretData = (el, position) => {
 /*
   Sets the caret position.
   Parameters:
-    d, Object{node, offset}: where node is the Node that contains the caret and
-      offset is the position within the Node
     el, DOM Element: the element that contains the Node
     position, int: the desired position
 */
-const setCaretPosition = (d, el) => {
+const setCaretPosition = (el, position) => {
   const doc = el.ownerDocument || el.document;
   const win = doc.defaultView || doc.parentWindow;
   const sel = win.getSelection();
   const range = doc.createRange();
-  range.setStart(d.node, d.offset);
+
+  const cd = getCaretData(el, position);
+  if (cd.node === undefined) {
+    cd.node = el;
+  }
+  range.setStart(cd.node, cd.offset);
   range.collapse(true);
   sel.removeAllRanges();
   sel.addRange(range);
 };
 
+/*
+  Sets the active user's displayed caret position.
+  Parameters:
+    el, DOM Element: the element that contains the Node
+    position, int: the desired position
+    id, int: the active user's id
+    colour, string: the colour to use for the caret
+*/
+const setActiveUserCaretPosition = (el, position, id, colour) => {
+  console.log(position, id, colour);
+  const cd = getCaretData(el, position);
+  let cursor = el.querySelector(`#user-${id}`);
+  if (cursor === null) {
+    cursor = document.createElement('div');
+    cursor.setAttribute('id', `user-${id}`);
+    cursor.setAttribute('class', 'cursor');
+    cursor.setAttribute('style', `background-color: var(--${colour});`);
+  } else {
+    cursor = cursor.parentNode.removeChild(cursor);
+  }
+
+  if (cd.node !== undefined) {
+    const newNode = cd.node.splitText(cd.offset);
+    newNode.parentNode.insertBefore(cursor, newNode);
+  } else {
+    el.append(cursor, document.createTextNode(''));
+  }
+};
+
 export {
   getCaretPosition,
-  getCaretData,
   setCaretPosition,
+  setActiveUserCaretPosition,
 };
