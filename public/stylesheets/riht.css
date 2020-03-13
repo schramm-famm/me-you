@@ -1,5 +1,19 @@
 :root{
   --offwhite: #f0f0f0;
+  --light-blue: #a1f4ff;
+  --dark-blue: #00aaff;
+  --pink: #ff6e8b;
+  --salmon: #ff5e5e;
+  --red: #e60000;
+  --mustard: #ffe100;
+  --light-orange: #ffae00;
+  --dark-orange: #ff6f00;
+  --light-green: #25e873;
+  --dark-green: #007d11;
+  --olive: #738f51;
+  --seafoam: #71eeb8;
+  --light-purple: #ae4aff;
+  --dark-purple: #804aff;
 }
 
 * {
@@ -70,4 +84,11 @@ h2 {
 
 .active {
   background-color: var(--offwhite);
+}
+
+.cursor {
+  display: inline-block;
+  vertical-align: bottom;
+  width: 2px;
+  height: 1.25em;
 }

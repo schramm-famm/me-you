@@ -16,6 +16,23 @@ const cursorProps = Object.freeze(['type', 'user_id', 'cursor_delta']);
 const ackProps = Object.freeze(['version']);
 const userActionProps = Object.freeze(['user_id']);
 
+const userColours = Object.freeze([
+  'light-blue',
+  'dark-blue',
+  'pink',
+  'salmon',
+  'red',
+  'mustard',
+  'light-orange',
+  'dark-orange',
+  'light-green',
+  'dark-green',
+  'olive',
+  'seafoam',
+  'light-purple',
+  'dark-purple',
+]);
+
 // WebSocket error codes
 const GOING_AWAY = 4001;
 const INVALID_PAYLOAD_DATA = 4007;
@@ -39,6 +56,7 @@ export {
   cursorProps,
   ackProps,
   userActionProps,
+  userColours,
   GOING_AWAY,
   INVALID_PAYLOAD_DATA,
   INTERNAL_ERROR,
