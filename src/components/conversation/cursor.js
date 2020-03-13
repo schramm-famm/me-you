@@ -102,7 +102,6 @@ const setCaretPosition = (el, position) => {
     colour, string: the colour to use for the caret
 */
 const setActiveUserCaretPosition = (el, position, id, colour) => {
-  console.log(position, id, colour);
   const cd = getCaretData(el, position);
   let cursor = el.querySelector(`#user-${id}`);
   if (cursor === null) {
