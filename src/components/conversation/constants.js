@@ -11,7 +11,7 @@ const updateTypes = Object.freeze({
   Cursor: 1,
 });
 const initialProps = Object.freeze(['content', 'version']);
-const editProps = Object.freeze(['type', 'user_id', 'cursor_delta', 'version', 'patch']);
+const editProps = Object.freeze(['type', 'user_id', 'cursor_delta', 'version', 'patch', 'doc_delta']);
 const cursorProps = Object.freeze(['type', 'user_id', 'cursor_delta']);
 const ackProps = Object.freeze(['version']);
 const userActionProps = Object.freeze(['user_id']);

@@ -46,6 +46,18 @@ const getAllTextNodes = (el) => {
 };
 
 /*
+  Gets the total size of only the text nodes in the given DOM Element
+  Parameters:
+    el, DOM Element: the element to traverse
+  Returns: int, total size of text nodes
+*/
+const getTextSize = (el) => {
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  return range.toString().length;
+};
+
+/*
   Determines the node and offset within the node of the given position.
   Parameters:
     el, DOM Element: the element that contains the caret
@@ -122,6 +134,7 @@ const setActiveUserCaretPosition = (el, position, id, colour) => {
 };
 
 export {
+  getTextSize,
   getCaretPosition,
   setCaretPosition,
   setActiveUserCaretPosition,

@@ -1,10 +1,11 @@
 import DiffMatchPatch from 'diff-match-patch';
 
 import {
+  getTextSize,
   getCaretPosition,
   setCaretPosition,
   setActiveUserCaretPosition,
-} from './cursor';
+} from './dom';
 
 import {
   msgTypes,
@@ -55,7 +56,7 @@ function Message(type, msgData) {
   this.data = msgData;
 }
 
-function Update(type, cursorDelta, version, patch) {
+function Update(type, cursorDelta, version, patch, docDelta) {
   this.type = type;
   this.cursor_delta = cursorDelta;
   if (version !== undefined) {
@@ -63,6 +64,9 @@ function Update(type, cursorDelta, version, patch) {
   }
   if (patch !== undefined) {
     this.patch = patch;
+  }
+  if (docDelta !== undefined) {
+    this.doc_delta = docDelta;
   }
 }
 
@@ -120,11 +124,16 @@ function sendPatch() {
     debugLog(`Cursor position: ${this.cursorPosition}`);
     debugLog(this.activeUsers);
 
+    const newTextSize = getTextSize(this.conversationDOM);
+    const docDelta = newTextSize - this.textSize;
+    this.textSize = newTextSize;
+
     const update = new Update(
       updateTypes.Edit,
       cursorDelta,
       this.version,
       patchStr,
+      docDelta,
     );
 
     const msg = new Message(msgTypes.Update, update);
@@ -184,6 +193,7 @@ function handleInitMsg(msg) {
   this.content = msg.content;
   this.checkpoint = this.content;
   this.conversationDOM.innerHTML = this.content;
+  this.numChars = getTextSize(this.conversationDOM);
 
   if (msg.active_users !== undefined) {
     Object.entries(msg.active_users).forEach(([user, pos]) => {

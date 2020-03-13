@@ -31,6 +31,7 @@ const data = () => ({
   checkpoint: '',
   version: -1,
   content: '',
+  textSize: 0,
   patchBuffer: [],
   activeUsers: {},
   cursorPosition: 0,
