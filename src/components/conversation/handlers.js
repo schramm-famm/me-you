@@ -1,6 +1,11 @@
 import DiffMatchPatch from 'diff-match-patch';
 
-import { getCaretPosition, getCaretData, setCaretPosition } from './cursor';
+import {
+  getCaretPosition,
+  setCaretPosition,
+  setActiveUserCaretPosition,
+} from './cursor';
+
 import {
   msgTypes,
   updateTypes,
@@ -9,6 +14,7 @@ import {
   cursorProps,
   ackProps,
   userActionProps,
+  userColours,
   INVALID_PAYLOAD_DATA,
   INTERNAL_ERROR,
   ARROW_DOWN,
@@ -20,9 +26,12 @@ import {
   PAGE_DOWN,
   PAGE_UP,
 } from './constants';
+
 import { debugLog, checkProps } from '../../utils';
 
 const dmp = new DiffMatchPatch();
+
+const randomInd = (list) => Math.floor(Math.random() * Math.floor(list.length));
 
 /* WebSocket exception objects */
 function InvalidDataException(msg) {
@@ -57,8 +66,36 @@ function Update(type, cursorDelta, version, patch) {
   }
 }
 
+function createActiveUser(user, pos) {
+  const colourInd = randomInd(this.colourList);
+  this.activeUsers[user] = {
+    position: pos,
+    colour: this.colourList[colourInd],
+  };
+
+  this.colourList.splice(colourInd, 1);
+
+  setActiveUserCaretPosition(
+    this.conversationDOM,
+    this.activeUsers[user].position,
+    user,
+    this.activeUsers[user].colour,
+  );
+
+  if (this.colourList.length === 0) {
+    this.colourList = userColours;
+  }
+}
+
 function sendPatch() {
+  const cursors = this.conversationDOM.querySelectorAll('div.cursor');
+  cursors.forEach((cursor) => {
+    cursor.parentNode.removeChild(cursor);
+  });
+
   const patches = dmp.patch_make(this.content, this.conversationDOM.innerHTML);
+  this.content = this.conversationDOM.innerHTML;
+
   patches.forEach((patch) => {
     this.version += 1;
 
@@ -72,10 +109,10 @@ function sendPatch() {
 
     Object.keys(this.activeUsers).forEach((user) => {
       if (
-        this.activeUsers[user] > this.cursorPosition
-        || (this.activeUsers[user] >= this.cursorPosition && cursorDelta < 0)
+        this.activeUsers[user].position > this.cursorPosition
+        || (this.activeUsers[user].position >= this.cursorPosition && cursorDelta < 0)
       ) {
-        this.activeUsers[user] += cursorDelta;
+        this.activeUsers[user].position += cursorDelta;
       }
     });
 
@@ -99,7 +136,14 @@ function sendPatch() {
     this.ws.send(JSON.stringify(msg));
   });
 
-  this.content = this.conversationDOM.innerHTML;
+  Object.keys(this.activeUsers).forEach((user) => {
+    setActiveUserCaretPosition(
+      this.conversationDOM,
+      this.activeUsers[user].position,
+      user,
+      this.activeUsers[user].colour,
+    );
+  });
 }
 
 function sendCursorUpdate() {
@@ -136,14 +180,16 @@ function handleInitMsg(msg) {
     throw new InvalidDataException(errMsg);
   }
 
-  if ('active_users' in msg) {
-    this.activeUsers = msg.active_users;
-  }
-
   this.version = msg.version;
   this.content = msg.content;
   this.checkpoint = this.content;
   this.conversationDOM.innerHTML = this.content;
+
+  if (msg.active_users !== undefined) {
+    Object.entries(msg.active_users).forEach(([user, pos]) => {
+      this.createActiveUser(user, pos);
+    });
+  }
 }
 
 function handleUpdateEdit(msg) {
@@ -153,6 +199,11 @@ function handleUpdateEdit(msg) {
     throw new InvalidDataException(errMsg);
   }
 
+  const cursors = this.conversationDOM.querySelectorAll('div.cursor');
+  cursors.forEach((cursor) => {
+    cursor.parentNode.removeChild(cursor);
+  });
+
   const msgPatch = dmp.patch_fromText(msg.patch);
   let versionDelta = 1;
   let cursorDelta = 0;
@@ -161,8 +212,8 @@ function handleUpdateEdit(msg) {
   this.checkpoint = content;
 
   const cursorAffected = (
-    this.activeUsers[msg.user_id] < this.cursorPosition
-    || (this.activeUsers[msg.user_id] <= this.cursorPosition && msg.cursor_delta < 0)
+    this.activeUsers[msg.user_id].position < this.cursorPosition
+    || (this.activeUsers[msg.user_id].position <= this.cursorPosition && msg.cursor_delta < 0)
   );
 
   if (cursorAffected) {
@@ -198,19 +249,28 @@ function handleUpdateEdit(msg) {
   this.version += versionDelta;
   this.cursorPosition += cursorDelta;
   debugLog(`Cursor position: ${this.cursorPosition}`);
-  this.activeUsers[msg.user_id] += msg.cursor_delta;
-  debugLog(this.activeUsers);
   this.content = content;
   this.conversationDOM.innerHTML = this.content;
 
-  const caretData = getCaretData(this.conversationDOM, this.cursorPosition);
-  if (caretData.node === undefined) {
-    caretData.node = this.conversationDOM;
-    caretData.offset = 0;
-  } else if (caretData.offset > caretData.node.nodeValue.length) {
-    caretData.offset = caretData.node.nodeValue.length;
-  }
-  setCaretPosition(caretData, this.conversationDOM);
+  setCaretPosition(this.conversationDOM, this.cursorPosition);
+
+  Object.entries(this.activeUsers).forEach(([user, { position, colour }]) => {
+    if (user === msg.user_id.toString(10) || (user !== msg.user_id.toString(10)
+      && (this.activeUsers[msg.user_id].position < position
+      || (this.activeUsers[msg.user_id].position <= position && msg.cursor_delta < 0))
+    )) {
+      this.activeUsers[user].position += msg.cursor_delta;
+    }
+
+    setActiveUserCaretPosition(
+      this.conversationDOM,
+      this.activeUsers[user].position,
+      user,
+      colour,
+    );
+  });
+
+  debugLog(this.activeUsers);
 }
 
 function handleUpdateCursor(msg) {
@@ -220,8 +280,14 @@ function handleUpdateCursor(msg) {
     throw new InvalidDataException(errMsg);
   }
 
-  this.activeUsers[msg.user_id] += msg.cursor_delta;
+  this.activeUsers[msg.user_id].position += msg.cursor_delta;
   debugLog(this.activeUsers);
+  setActiveUserCaretPosition(
+    this.conversationDOM,
+    this.activeUsers[msg.user_id].position,
+    msg.user_id,
+    this.activeUsers[msg.user_id].colour,
+  );
 }
 
 function handleUpdateMsg(msg) {
@@ -269,7 +335,7 @@ function handleUserJoinMsg(msg) {
     throw new InvalidDataException(errMsg);
   }
 
-  this.activeUsers[msg.user_id] = 0;
+  this.createActiveUser(msg.user_id, 0);
 }
 
 function handleUserLeaveMsg(msg) {
@@ -280,6 +346,8 @@ function handleUserLeaveMsg(msg) {
   }
 
   delete this.activeUsers[msg.user_id];
+  const cursor = this.conversationDOM.querySelector(`#user-${msg.user_id}`);
+  cursor.parentNode.removeChild(cursor);
 }
 
 function parseWSMessage(e) {
@@ -361,6 +429,7 @@ function connectWebSocket() {
 
 export default {
   methods: {
+    createActiveUser,
     sendPatch,
     sendCursorUpdate,
     handleKeyUp,
