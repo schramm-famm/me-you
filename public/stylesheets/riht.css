@@ -14,6 +14,21 @@
   --seafoam: #71eeb8;
   --light-purple: #ae4aff;
   --dark-purple: #804aff;
+
+  --highlight-light-blue: #a1f43f;
+  --highlight-dark-blue: #00aaff3f;
+  --highlight-pink: #ff6e8b3f;
+  --highlight-salmon: #ff5e5e3f;
+  --highlight-red: #e600003f;
+  --highlight-mustard: #ffe1003f;
+  --highlight-light-orange: #ffae003f;
+  --highlight-dark-orange: #ff6f003f;
+  --highlight-light-green: #25e8733f;
+  --highlight-dark-green: #007d113f;
+  --highlight-olive: #738f513f;
+  --highlight-seafoam: #71eeb83f;
+  --highlight-light-purple: #ae4aff3f;
+  --highlight-dark-purple: #804aff3f;
 }
 
 * {
@@ -87,8 +102,9 @@ h2 {
 }
 
 .cursor {
-  display: inline-block;
-  vertical-align: bottom;
+  display: block;
+  position: absolute;
+  top: 0px;
   width: 2px;
   height: 1.25em;
 }

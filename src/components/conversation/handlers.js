@@ -4,8 +4,24 @@ import {
   getTextSize,
   getCaretPosition,
   setCaretPosition,
+  removeHighlight,
+  removeAllHighlights,
   setActiveUserCaretPosition,
 } from './dom';
+
+import {
+  InvalidDataException,
+  RestartConnectionException,
+  FailedAckException,
+  Message,
+  Sync,
+  Update,
+  Delta,
+  Caret,
+  Patch,
+  VersionCheckpoint,
+  shiftCaret,
+} from './protocol';
 
 import {
   msgTypes,
@@ -14,66 +30,25 @@ import {
   editProps,
   cursorProps,
   ackProps,
+  syncProps,
   userActionProps,
   userColours,
-  INVALID_PAYLOAD_DATA,
   INTERNAL_ERROR,
-  ARROW_DOWN,
-  ARROW_LEFT,
-  ARROW_RIGHT,
-  ARROW_UP,
-  END,
-  HOME,
-  PAGE_DOWN,
-  PAGE_UP,
 } from './constants';
 
-import { debugLog, checkProps } from '../../utils';
+import { debugLog, checkProps, keysToCamel } from '../../utils';
 
 const dmp = new DiffMatchPatch();
 
 const randomInd = (list) => Math.floor(Math.random() * Math.floor(list.length));
 
-/* WebSocket exception objects */
-function InvalidDataException(msg) {
-  this.message = msg;
-  this.code = INVALID_PAYLOAD_DATA;
-}
-
-function RestartConnectionException(msg) {
-  this.message = msg;
-  this.code = INVALID_PAYLOAD_DATA;
-}
-
-function FailedAckException(msg) {
-  this.message = msg;
-  this.code = INTERNAL_ERROR;
-}
-
-/* WebSocket message objects */
-function Message(type, msgData) {
-  this.type = type;
-  this.data = msgData;
-}
-
-function Update(type, cursorDelta, version, patch, docDelta) {
-  this.type = type;
-  this.cursor_delta = cursorDelta;
-  if (version !== undefined) {
-    this.version = version;
-  }
-  if (patch !== undefined) {
-    this.patch = patch;
-  }
-  if (docDelta !== undefined) {
-    this.doc_delta = docDelta;
-  }
-}
-
-function createActiveUser(user, pos) {
+function createActiveUser(user, caret) {
   const colourInd = randomInd(this.colourList);
+  const { latest, version } = this.checkpoint;
+
+  version[latest].activeUsers[user] = caret;
   this.activeUsers[user] = {
-    position: pos,
+    caret,
     colour: this.colourList[colourInd],
   };
 
@@ -81,7 +56,7 @@ function createActiveUser(user, pos) {
 
   setActiveUserCaretPosition(
     this.conversationDOM,
-    this.activeUsers[user].position,
+    this.activeUsers[user].caret,
     user,
     this.activeUsers[user].colour,
   );
@@ -92,13 +67,20 @@ function createActiveUser(user, pos) {
 }
 
 function sendPatch() {
-  const cursors = this.conversationDOM.querySelectorAll('div.cursor');
-  cursors.forEach((cursor) => {
-    cursor.parentNode.removeChild(cursor);
-  });
+  removeAllHighlights(this.conversationDOM);
 
   const patches = dmp.patch_make(this.content, this.conversationDOM.innerHTML);
-  this.content = this.conversationDOM.innerHTML;
+
+  const { start, end } = getCaretPosition(this.conversationDOM);
+  const newTextSize = getTextSize(this.conversationDOM);
+
+  const delta = new Delta(
+    start - this.caret.start,
+    end - this.caret.end,
+    newTextSize - this.textSize,
+  );
+
+  const camelDelta = keysToCamel(delta);
 
   patches.forEach((patch) => {
     this.version += 1;
@@ -108,78 +90,50 @@ function sendPatch() {
       return;
     }
 
-    const cursorPosition = getCaretPosition(this.conversationDOM);
-    const cursorDelta = cursorPosition - this.cursorPosition;
-
-    Object.keys(this.activeUsers).forEach((user) => {
-      if (
-        this.activeUsers[user].position > this.cursorPosition
-        || (this.activeUsers[user].position >= this.cursorPosition && cursorDelta < 0)
-      ) {
-        this.activeUsers[user].position += cursorDelta;
-      }
-    });
-
-    this.cursorPosition = cursorPosition;
-    debugLog(`Cursor position: ${this.cursorPosition}`);
-    debugLog(this.activeUsers);
-
-    const newTextSize = getTextSize(this.conversationDOM);
-    const docDelta = newTextSize - this.textSize;
-    this.textSize = newTextSize;
-
     const update = new Update(
       updateTypes.Edit,
-      cursorDelta,
+      delta,
       this.version,
       patchStr,
-      docDelta,
     );
 
     const msg = new Message(msgTypes.Update, update);
 
-    debugLog('Sent:');
-    debugLog(msg);
-
-    this.patchBuffer.push({ cursorDelta, patchStr });
     this.ws.send(JSON.stringify(msg));
+    this.patchBuffer.push(new Patch(patchStr, camelDelta));
   });
 
-  Object.keys(this.activeUsers).forEach((user) => {
+  Object.entries(this.activeUsers).forEach(([user, { caret, colour }]) => {
+    this.activeUsers[user].caret = shiftCaret(caret, this.caret, camelDelta);
     setActiveUserCaretPosition(
       this.conversationDOM,
-      this.activeUsers[user].position,
+      this.activeUsers[user].caret,
       user,
-      this.activeUsers[user].colour,
+      colour,
     );
   });
+
+  this.caret = new Caret(start, end);
+  this.textSize = newTextSize;
+  this.content = this.conversationDOM.innerHTML;
 }
 
-function sendCursorUpdate() {
-  const cursorPosition = getCaretPosition(this.conversationDOM);
-  const cursorDelta = cursorPosition - this.cursorPosition;
-  this.cursorPosition = cursorPosition;
-  debugLog(`Cursor position: ${this.cursorPosition}`);
-
-  const update = new Update(updateTypes.Cursor, cursorDelta);
-  const msg = new Message(msgTypes.Update, update);
-
-  debugLog('Sent:');
-  debugLog(msg);
-
-  this.ws.send(JSON.stringify(msg));
-}
-
-function handleKeyUp(e) {
-  if ( // Not navigation key
-    e.key !== ARROW_UP && e.key !== ARROW_DOWN && e.key !== ARROW_LEFT
-    && e.key !== ARROW_RIGHT && e.key !== HOME && e.key !== END
-    && e.key !== PAGE_UP && e.key !== PAGE_DOWN
-  ) {
+function handleSelectionChange() {
+  if (document.activeElement !== this.conversationDOM) {
     return;
   }
 
-  this.sendCursorUpdate();
+  const { start, end } = getCaretPosition(this.conversationDOM);
+  const delta = new Delta(start - this.caret.start, end - this.caret.end);
+  const update = new Update(updateTypes.Cursor, delta, this.version);
+  const msg = new Message(msgTypes.Update, update);
+
+  this.ws.send(JSON.stringify(msg));
+  this.caret = new Caret(start, end);
+
+  if (this.checkpoint.latest === this.version) {
+    this.checkpoint.version[this.version].selfCaret = this.caret;
+  }
 }
 
 function handleInitMsg(msg) {
@@ -191,13 +145,15 @@ function handleInitMsg(msg) {
 
   this.version = msg.version;
   this.content = msg.content;
-  this.checkpoint = this.content;
+  this.checkpoint.content = this.content;
+  this.checkpoint.latest = this.version;
+  this.checkpoint.version[this.version] = new VersionCheckpoint(this.caret, {});
   this.conversationDOM.innerHTML = this.content;
-  this.numChars = getTextSize(this.conversationDOM);
+  this.textSize = getTextSize(this.conversationDOM);
 
-  if (msg.active_users !== undefined) {
-    Object.entries(msg.active_users).forEach(([user, pos]) => {
-      this.createActiveUser(user, pos);
+  if (msg.activeUsers !== undefined) {
+    Object.entries(msg.activeUsers).forEach(([user, caret]) => {
+      this.createActiveUser(user, caret);
     });
   }
 }
@@ -209,78 +165,89 @@ function handleUpdateEdit(msg) {
     throw new InvalidDataException(errMsg);
   }
 
-  const cursors = this.conversationDOM.querySelectorAll('div.cursor');
-  cursors.forEach((cursor) => {
-    cursor.parentNode.removeChild(cursor);
-  });
+  removeAllHighlights(this.conversationDOM);
 
   const msgPatch = dmp.patch_fromText(msg.patch);
-  let versionDelta = 1;
-  let cursorDelta = 0;
 
-  let [content] = dmp.patch_apply(msgPatch, this.checkpoint);
-  this.checkpoint = content;
+  [this.content] = dmp.patch_apply(msgPatch, this.checkpoint.content);
+  this.checkpoint.content = this.content;
 
-  const cursorAffected = (
-    this.activeUsers[msg.user_id].position < this.cursorPosition
-    || (this.activeUsers[msg.user_id].position <= this.cursorPosition && msg.cursor_delta < 0)
+  const { latest } = this.checkpoint;
+  const { activeUsers } = this.checkpoint.version[latest];
+  let { selfCaret } = this.checkpoint.version[latest];
+  const senderCaret = activeUsers[msg.userId];
+  const newCheckpoint = new VersionCheckpoint(
+    selfCaret,
+    activeUsers,
+    senderCaret,
+    msg.delta,
   );
 
-  if (cursorAffected) {
-    cursorDelta += msg.cursor_delta;
+  // Shift client checkpoint caret
+  if (selfCaret) {
+    newCheckpoint.selfCaret = shiftCaret(selfCaret, senderCaret, msg.delta);
+    selfCaret = { ...newCheckpoint.selfCaret };
   }
+
+  // Shift active users' checkpoint carets
+  Object.entries(newCheckpoint.activeUsers).forEach(([user, caret]) => {
+    let newCaret = caret;
+    if (user === msg.userId.toString(10)) {
+      // Apply delta to sender caret
+      newCaret.start += msg.delta.caretStart;
+      newCaret.end += msg.delta.caretEnd;
+    } else {
+      newCaret = shiftCaret(newCaret, senderCaret, msg.delta);
+    }
+    newCheckpoint.activeUsers[user] = newCaret;
+    this.activeUsers[user].caret = newCaret;
+  });
+
+  // Add new version checkpoint
+  this.checkpoint.version[msg.version] = newCheckpoint;
+  this.checkpoint.latest = msg.version;
 
   if (msg.version <= this.version) {
     let i = 0;
 
     while (i < this.patchBuffer.length) {
-      const { cursorDelta: patchCursorDelta, patchStr } = this.patchBuffer[i];
+      const { delta, patchStr } = this.patchBuffer[i];
       const patch = dmp.patch_fromText(patchStr);
-      const [updatedContent, results] = dmp.patch_apply(patch, content);
+      const [content, results] = dmp.patch_apply(patch, this.content);
 
       if (!results[0]) {
         this.patchBuffer.splice(i, 1);
-        versionDelta -= 1;
+        this.version -= 1;
       } else {
-        content = updatedContent;
-        if (cursorAffected) {
-          cursorDelta += patchCursorDelta;
-        }
+        this.content = content;
+        Object.entries(this.activeUsers).forEach(([user, { caret }]) => {
+          this.activeUsers[user].caret = shiftCaret(caret, selfCaret, delta);
+        });
+        selfCaret.start += delta.caretStart;
+        selfCaret.end += delta.caretEnd;
         i += 1;
       }
     }
-  } else if (msg.version === this.version + 1) {
-    this.patchBuffer = [];
-  } else {
+  } else if (msg.version > this.version + 1) {
     const errMsg = `Server version greater than expected: ${msg.version} > ${this.version + 1}`;
     throw new RestartConnectionException(errMsg);
   }
 
-  this.version += versionDelta;
-  this.cursorPosition += cursorDelta;
-  debugLog(`Cursor position: ${this.cursorPosition}`);
-  this.content = content;
+  const syncMsg = new Message(msgTypes.Sync, new Sync(msg.version));
+  this.ws.send(JSON.stringify(syncMsg));
+
+  this.version += 1;
   this.conversationDOM.innerHTML = this.content;
+  this.textSize += msg.delta.doc;
 
-  setCaretPosition(this.conversationDOM, this.cursorPosition);
+  if (this.caret) {
+    this.caret = selfCaret;
+    setCaretPosition(this.conversationDOM, this.caret);
+  }
 
-  Object.entries(this.activeUsers).forEach(([user, { position, colour }]) => {
-    if (user === msg.user_id.toString(10) || (user !== msg.user_id.toString(10)
-      && (this.activeUsers[msg.user_id].position < position
-      || (this.activeUsers[msg.user_id].position <= position && msg.cursor_delta < 0))
-    )) {
-      this.activeUsers[user].position += msg.cursor_delta;
-    }
-
-    setActiveUserCaretPosition(
-      this.conversationDOM,
-      this.activeUsers[user].position,
-      user,
-      colour,
-    );
+  Object.entries(this.activeUsers).forEach(([user, { caret, colour }]) => {
+    setActiveUserCaretPosition(this.conversationDOM, caret, user, colour);
   });
-
-  debugLog(this.activeUsers);
 }
 
 function handleUpdateCursor(msg) {
@@ -290,19 +257,47 @@ function handleUpdateCursor(msg) {
     throw new InvalidDataException(errMsg);
   }
 
-  this.activeUsers[msg.user_id].position += msg.cursor_delta;
-  debugLog(this.activeUsers);
+  // Update user's checkpoint caret
+  const checkpoint = this.checkpoint.version[msg.version];
+  checkpoint.activeUsers[msg.userId].start += msg.delta.caretStart;
+  checkpoint.activeUsers[msg.userId].end += msg.delta.caretEnd;
+
+  const latestVersion = this.version - this.patchBuffer.length;
+  for (let v = msg.version + 1; v <= latestVersion; v += 1) {
+    this.checkpoint.version[v].activeUsers[msg.userId] = shiftCaret(
+      this.checkpoint.version[v - 1].activeUsers[msg.userId],
+      this.checkpoint.version[v].senderCaret,
+      this.checkpoint.version[v].delta,
+    );
+  }
+
+  // Update user's caret using patchBuffer
+  const latestActiveUsers = this.checkpoint.version[latestVersion].activeUsers;
+  const selfCaret = { ...this.checkpoint.version[latestVersion].selfCaret };
+
+  this.activeUsers[msg.userId].caret = { ...latestActiveUsers[msg.userId] };
+
+  this.patchBuffer.forEach(({ delta }) => {
+    this.activeUsers[msg.userId].caret = shiftCaret(
+      this.activeUsers[msg.userId].caret,
+      selfCaret,
+      delta,
+    );
+    selfCaret.start += delta.caretStart;
+    selfCaret.end += delta.caretEnd;
+  });
+
   setActiveUserCaretPosition(
     this.conversationDOM,
-    this.activeUsers[msg.user_id].position,
-    msg.user_id,
-    this.activeUsers[msg.user_id].colour,
+    this.activeUsers[msg.userId].caret,
+    msg.userId,
+    this.activeUsers[msg.userId].colour,
   );
 }
 
 function handleUpdateMsg(msg) {
-  if (!(msg.user_id in this.activeUsers)) {
-    const errMsg = `Message sender (user ${msg.user_id}) not active in conversation`;
+  if (!(msg.userId in this.activeUsers)) {
+    const errMsg = `Message sender (user ${msg.userId}) not active in conversation`;
     throw new InvalidDataException(errMsg);
   }
 
@@ -327,15 +322,52 @@ function handleAckMsg(msg) {
     throw new InvalidDataException(errMsg);
   }
 
-  const patch = dmp.patch_fromText(this.patchBuffer[0].patchStr);
-  let ok = false;
-  [this.checkpoint, ok] = dmp.patch_apply(patch, this.checkpoint);
+  if (this.patchBuffer.length <= 0) {
+    const errMsg = 'No outstanding patches awaiting acknowledgement';
+    throw new FailedAckException(errMsg);
+  }
+
+  const [{ patchStr, delta }] = this.patchBuffer.splice(0, 1);
+  const patch = dmp.patch_fromText(patchStr);
+  const [content, ok] = dmp.patch_apply(patch, this.checkpoint.content);
   if (!ok) {
     const errMsg = 'Failed to apply acknowledged patch';
     throw new FailedAckException(errMsg);
   }
+  this.checkpoint.content = content;
 
-  this.patchBuffer.splice(0, 1);
+  const { selfCaret } = this.checkpoint.version[msg.version - 1];
+  const newCheckpoint = new VersionCheckpoint(
+    selfCaret,
+    this.checkpoint.version[msg.version - 1].activeUsers,
+    selfCaret,
+    delta,
+  );
+
+  newCheckpoint.selfCaret.start += delta.caretStart;
+  newCheckpoint.selfCaret.end += delta.caretEnd;
+
+  Object.entries(newCheckpoint.activeUsers).forEach(([user, caret]) => {
+    newCheckpoint.activeUsers[user] = shiftCaret(caret, selfCaret, delta);
+  });
+
+  this.checkpoint.version[msg.version] = newCheckpoint;
+  this.checkpoint.latest = msg.version;
+}
+
+function handleSyncMsg(msg) {
+  const missingProps = checkProps(msg, syncProps);
+  if (missingProps.length > 0) {
+    const errMsg = `Sync message missing required fields: ${missingProps.join()}`;
+    throw new InvalidDataException(errMsg);
+  }
+
+  if (!(msg.version - 1 in this.checkpoint.version)) {
+    const errMsg = `Version ${msg.version - 1} does not exist in checkpoints`;
+    throw new InvalidDataException(errMsg);
+  }
+
+  delete this.checkpoint.version[msg.version - 1];
 }
 
 function handleUserJoinMsg(msg) {
@@ -345,7 +377,7 @@ function handleUserJoinMsg(msg) {
     throw new InvalidDataException(errMsg);
   }
 
-  this.createActiveUser(msg.user_id, 0);
+  this.createActiveUser(msg.userId, new Caret(0, 0));
 }
 
 function handleUserLeaveMsg(msg) {
@@ -355,9 +387,15 @@ function handleUserLeaveMsg(msg) {
     throw new InvalidDataException(errMsg);
   }
 
-  delete this.activeUsers[msg.user_id];
-  const cursor = this.conversationDOM.querySelector(`#user-${msg.user_id}`);
-  cursor.parentNode.removeChild(cursor);
+  delete this.activeUsers[msg.userId];
+  const cursor = this.conversationDOM.parentNode.querySelector(`#cursor-${msg.userId}`);
+  if (cursor) {
+    cursor.parentNode.removeChild(cursor);
+  }
+  const highlight = this.conversationDOM.querySelector(`#highlight-${msg.userId}`);
+  if (highlight) {
+    removeHighlight(highlight);
+  }
 }
 
 function parseWSMessage(e) {
@@ -368,6 +406,8 @@ function parseWSMessage(e) {
     console.log(`Unable to parse JSON data: ${err.message}`);
     return;
   }
+
+  msg = keysToCamel(msg);
 
   debugLog('Received:');
   debugLog(msg);
@@ -381,6 +421,9 @@ function parseWSMessage(e) {
       break;
     case msgTypes.Ack:
       this.handleAckMsg(msg.data);
+      break;
+    case msgTypes.Sync:
+      this.handleSyncMsg(msg.data);
       break;
     case msgTypes.UserJoin:
       this.handleUserJoinMsg(msg.data);
@@ -409,8 +452,10 @@ function connectWebSocket() {
     console.log(`Closing WebSocket connection for conversation ${this.conversation.id}: ${e.reason}`);
     this.content = '';
     this.conversationDOM.innerHTML = this.content;
-    this.checkpoint = this.content;
+    this.checkpoint.content = this.content;
+    this.checkpoint.version = {};
     this.version = -1;
+    this.latest = this.version;
     this.patchBuffer = [];
     this.conversation = this.conversations[this.activeConversation];
   };
@@ -441,13 +486,13 @@ export default {
   methods: {
     createActiveUser,
     sendPatch,
-    sendCursorUpdate,
-    handleKeyUp,
+    handleSelectionChange,
     handleInitMsg,
     handleUpdateEdit,
     handleUpdateCursor,
     handleUpdateMsg,
     handleAckMsg,
+    handleSyncMsg,
     handleUserJoinMsg,
     handleUserLeaveMsg,
     parseWSMessage,
