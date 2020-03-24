@@ -76,6 +76,18 @@ const processAdd = (receiverCaret, senderCaret, delta) => {
   return newReceiverCaret;
 };
 
+/*
+  Shifts a receiving caret based on the caret position of the sender and the deltas in the patch.
+  Parameters:
+    receiverCaret, Object{ start: int, end: int }: caret position of the
+      receiver
+    senderCaret, Object{ start: int, end: int }: caret position of the sender
+    delta, Object: deltas in the patch
+      delta.caretStart, int
+      delta.caretEnd, int
+      delta.doc, int
+  Returns: { start: int, end: int }, the new position of the caret
+*/
 const shiftCaret = (receiverCaret, senderCaret, delta) => {
   // Find range affected by the edit
   const range = {};
@@ -99,7 +111,6 @@ const shiftCaret = (receiverCaret, senderCaret, delta) => {
   }
 
   const rangeDelta = range.start - range.end;
-  console.log(range);
   const newReceiverCaret = {};
 
   Object.assign(newReceiverCaret, receiverCaret);
@@ -122,12 +133,10 @@ const shiftCaret = (receiverCaret, senderCaret, delta) => {
   }
 
   if (delta.caretStart > 0) {
-    const tmpSenderCaret = {
-      start: senderCaret.start,
-      end: senderCaret.start,
-    };
+    const tmpSenderCaret = new Caret(senderCaret.start, senderCaret.start);
     return processAdd(newReceiverCaret, tmpSenderCaret, delta.caretStart);
   }
+
   return newReceiverCaret;
 };
 

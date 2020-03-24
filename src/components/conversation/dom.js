@@ -2,7 +2,7 @@
   Gets the current position of the caret.
   Parameters:
     el, DOM Element: the element that the caret is in
-  Returns: int, the position of the caret
+  Returns: { start: int, end: int }, the position of the caret
 */
 const getCaretPosition = (el) => {
   let start = 0;
@@ -112,6 +112,11 @@ const setCaretPosition = (el, { start, end }) => {
   sel.addRange(range);
 };
 
+/*
+  Removes a "highlight" span from around text nodes.
+  Parameters:
+    highlight, DOM Element: the "highlight" span with children
+*/
 const removeHighlight = (highlight) => {
   const highlightRange = document.createRange();
   highlightRange.selectNodeContents(highlight);
@@ -119,6 +124,12 @@ const removeHighlight = (highlight) => {
   highlight.parentNode.removeChild(highlight);
 };
 
+/*
+  Removes all "highlight" spans from around text nodes inside a given DOM
+  element.
+  Parameters:
+    el, DOM Element: the element containing "highlight" spans
+*/
 const removeAllHighlights = (el) => {
   const highlights = el.querySelectorAll('span.highlight');
   highlights.forEach((highlight) => {
@@ -130,7 +141,9 @@ const removeAllHighlights = (el) => {
   Sets the active user's displayed caret position.
   Parameters:
     el, DOM Element: the element that contains the Node
-    position, int: the desired position
+    position, Object: the desired position
+      position.start, int: start of the caret
+      position.end, int: end of the caret
     id, int: the active user's id
     colour, string: the colour to use for the caret
 */

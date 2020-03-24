@@ -42,6 +42,11 @@ const dmp = new DiffMatchPatch();
 
 const randomInd = (list) => Math.floor(Math.random() * Math.floor(list.length));
 
+/*
+  Adds a user caret to the latest version checkpoint and the activeUsers Object,
+  and displays the caret in the DOM. Also randomly chooses a colour for the
+  user's caret.
+*/
 function createActiveUser(user, caret) {
   const colourInd = randomInd(this.colourList);
   const { latest, version } = this.checkpoint;
@@ -54,18 +59,24 @@ function createActiveUser(user, caret) {
 
   this.colourList.splice(colourInd, 1);
 
+  if (this.colourList.length === 0) {
+    this.colourList = userColours;
+  }
+
   setActiveUserCaretPosition(
     this.conversationDOM,
     this.activeUsers[user].caret,
     user,
     this.activeUsers[user].colour,
   );
-
-  if (this.colourList.length === 0) {
-    this.colourList = userColours;
-  }
 }
 
+/*
+  Generates a patch for the new conversation state and calculates the deltas of
+  the conversation before sending an Edit Update message to the WebSocket.
+  Appends the patch and delta to the patchBuffer and shifts other active users'
+  carets after the message is sent.
+*/
 function sendPatch() {
   removeAllHighlights(this.conversationDOM);
 
@@ -80,8 +91,10 @@ function sendPatch() {
     newTextSize - this.textSize,
   );
 
+  // Get the delta in camelCase
   const camelDelta = keysToCamel(delta);
 
+  // Send an Edit Update message for each patch
   patches.forEach((patch) => {
     this.version += 1;
 
@@ -103,6 +116,8 @@ function sendPatch() {
     this.patchBuffer.push(new Patch(patchStr, camelDelta));
   });
 
+  // Shift each active users' caret position and update the DOM with the new
+  // position
   Object.entries(this.activeUsers).forEach(([user, { caret, colour }]) => {
     this.activeUsers[user].caret = shiftCaret(caret, this.caret, camelDelta);
     setActiveUserCaretPosition(
@@ -118,6 +133,11 @@ function sendPatch() {
   this.content = this.conversationDOM.innerHTML;
 }
 
+/*
+  Sends a Cursor Update message with the caret deltas to the WebSocket. Updates
+  the caret position in the latest checkpoint if the latest checkpoint is the
+  current state of the conversation.
+*/
 function handleSelectionChange() {
   if (document.activeElement !== this.conversationDOM) {
     return;
@@ -132,10 +152,21 @@ function handleSelectionChange() {
   this.caret = new Caret(start, end);
 
   if (this.checkpoint.latest === this.version) {
-    this.checkpoint.version[this.version].selfCaret = this.caret;
+    this.checkpoint.version[this.version].selfCaret = { ...this.caret };
   }
 }
 
+/*
+  Handles an Init message sent from the WebSocket. Initializes the conversation
+  state, checkpoints, and active users.
+  Parameters:
+    msg, Object: payload of the Init Message
+      msg.version, int: version of the conversation
+      msg.content, string: conversation content
+      msg.activeUsers, Object, optional: active users in the conversation and
+        their caret positions. The keys are the user IDs and the values are the
+        caret positions.
+*/
 function handleInitMsg(msg) {
   const missingProps = checkProps(msg, initialProps);
   if (missingProps.length > 0) {
@@ -158,6 +189,20 @@ function handleInitMsg(msg) {
   }
 }
 
+/*
+  Handles an Edit Update message sent from the WebSocket. Processes the patch in
+  the message and shifts the client's and active users' carets accordingly.
+  Parameters:
+    msg, Object: payload of the Edit Update Message
+      msg.type, int: update type
+      msg.userId, int: sender user ID
+      msg.version, int: version of the conversation
+      msg.delta, Object: patch deltas
+        msg.delta.caretStart, int: caret start position delta
+        msg.delta.caretEnd, int: caret end position delta
+        msg.delta.doc, int: conversation text content delta
+      msg.patch, string: patch string
+*/
 function handleUpdateEdit(msg) {
   const missingProps = checkProps(msg, editProps);
   if (missingProps.length > 0) {
@@ -165,6 +210,7 @@ function handleUpdateEdit(msg) {
     throw new InvalidDataException(errMsg);
   }
 
+  // Remove highlights from the DOM so they don't affect the patch
   removeAllHighlights(this.conversationDOM);
 
   const msgPatch = dmp.patch_fromText(msg.patch);
@@ -176,6 +222,7 @@ function handleUpdateEdit(msg) {
   const { activeUsers } = this.checkpoint.version[latest];
   let { selfCaret } = this.checkpoint.version[latest];
   const senderCaret = activeUsers[msg.userId];
+  // newCheckpoint is the new version checkpoint once this update is processed
   const newCheckpoint = new VersionCheckpoint(
     selfCaret,
     activeUsers,
@@ -208,6 +255,8 @@ function handleUpdateEdit(msg) {
   this.checkpoint.latest = msg.version;
 
   if (msg.version <= this.version) {
+    // Version conflict occurred, so patches in patchBuffer need to be replayed
+    // on top
     let i = 0;
 
     while (i < this.patchBuffer.length) {
@@ -216,10 +265,13 @@ function handleUpdateEdit(msg) {
       const [content, results] = dmp.patch_apply(patch, this.content);
 
       if (!results[0]) {
+        // Remove failed patch from patchBuffer
         this.patchBuffer.splice(i, 1);
         this.version -= 1;
       } else {
         this.content = content;
+        // Shift displayed active users' carets with the client's caret as the
+        // sender
         Object.entries(this.activeUsers).forEach(([user, { caret }]) => {
           this.activeUsers[user].caret = shiftCaret(caret, selfCaret, delta);
         });
@@ -233,6 +285,8 @@ function handleUpdateEdit(msg) {
     throw new RestartConnectionException(errMsg);
   }
 
+  // Send a Sync message to indicate that this version has been processed
+  // successfully
   const syncMsg = new Message(msgTypes.Sync, new Sync(msg.version));
   this.ws.send(JSON.stringify(syncMsg));
 
@@ -240,16 +294,31 @@ function handleUpdateEdit(msg) {
   this.conversationDOM.innerHTML = this.content;
   this.textSize += msg.delta.doc;
 
+  // Set the client's caret in the DOM
   if (this.caret) {
     this.caret = selfCaret;
     setCaretPosition(this.conversationDOM, this.caret);
   }
 
+  // Set the active users' carts in the DOM
   Object.entries(this.activeUsers).forEach(([user, { caret, colour }]) => {
     setActiveUserCaretPosition(this.conversationDOM, caret, user, colour);
   });
 }
 
+/*
+  Handles a Cursor Update message sent from the WebSocket. Applies the delta to
+  the sender's caret at the specified version and shifts its caret at subsequent
+  versions accordingly.
+  Parameters:
+    msg, Object: payload of the Cursor Update Message
+      msg.type, int: update type
+      msg.userId, int: sender user ID
+      msg.version, int: version of the conversation
+      msg.delta, Object: patch deltas
+        msg.delta.caretStart, int: caret start position delta
+        msg.delta.caretEnd, int: caret end position delta
+*/
 function handleUpdateCursor(msg) {
   const missingProps = checkProps(msg, cursorProps);
   if (missingProps.length > 0) {
@@ -258,24 +327,28 @@ function handleUpdateCursor(msg) {
   }
 
   // Update user's checkpoint caret
-  const checkpoint = this.checkpoint.version[msg.version];
-  checkpoint.activeUsers[msg.userId].start += msg.delta.caretStart;
-  checkpoint.activeUsers[msg.userId].end += msg.delta.caretEnd;
+  const msgCheckpoint = this.checkpoint.version[msg.version];
+  msgCheckpoint.activeUsers[msg.userId].start += msg.delta.caretStart;
+  msgCheckpoint.activeUsers[msg.userId].end += msg.delta.caretEnd;
 
-  const latestVersion = this.version - this.patchBuffer.length;
-  for (let v = msg.version + 1; v <= latestVersion; v += 1) {
-    this.checkpoint.version[v].activeUsers[msg.userId] = shiftCaret(
-      this.checkpoint.version[v - 1].activeUsers[msg.userId],
-      this.checkpoint.version[v].senderCaret,
-      this.checkpoint.version[v].delta,
+  const { latest } = this.checkpoint;
+  for (let v = msg.version + 1; v <= latest; v += 1) {
+    const currCheckpoint = this.checkpoint.version[v];
+    const prevCheckpoint = this.checkpoint.version[v - 1];
+    // Shift caret using position at previous checkpoint and the sender and
+    // delta at the current checkpoint
+    currCheckpoint.activeUsers[msg.userId] = shiftCaret(
+      prevCheckpoint.activeUsers[msg.userId],
+      currCheckpoint.senderCaret,
+      currCheckpoint.delta,
     );
   }
 
   // Update user's caret using patchBuffer
-  const latestActiveUsers = this.checkpoint.version[latestVersion].activeUsers;
-  const selfCaret = { ...this.checkpoint.version[latestVersion].selfCaret };
+  const { activeUsers } = this.checkpoint.version[latest];
+  const selfCaret = { ...this.checkpoint.version[latest].selfCaret };
 
-  this.activeUsers[msg.userId].caret = { ...latestActiveUsers[msg.userId] };
+  this.activeUsers[msg.userId].caret = { ...activeUsers[msg.userId] };
 
   this.patchBuffer.forEach(({ delta }) => {
     this.activeUsers[msg.userId].caret = shiftCaret(
@@ -295,6 +368,20 @@ function handleUpdateCursor(msg) {
   );
 }
 
+/*
+  Handles a Update message sent from the WebSocket. Calls the proper function
+  based on the subtype of the Update.
+  Parameters:
+    msg, Object: payload of the Update Message
+      msg.type, int: update type
+      msg.userId, int: sender user ID
+      msg.version, int: version of the conversation
+      msg.delta, Object: patch deltas
+        msg.delta.caretStart, int: caret start position delta
+        msg.delta.caretEnd, int: caret end position delta
+        msg.delta.doc, int, Edit only: conversation text content delta
+      msg.patch, string, Edit only: patch string
+*/
 function handleUpdateMsg(msg) {
   if (!(msg.userId in this.activeUsers)) {
     const errMsg = `Message sender (user ${msg.userId}) not active in conversation`;
@@ -315,6 +402,13 @@ function handleUpdateMsg(msg) {
   }
 }
 
+/*
+  Handles an Ack message sent from the WebSocket. Creates a new checkpoint for
+  the version that was acknowledged using the earliest patch in the patchBuffer.
+  Parameters:
+    msg, Object: payload of the Ack message
+      msg.version, int: version of the conversation
+*/
 function handleAckMsg(msg) {
   const missingProps = checkProps(msg, ackProps);
   if (missingProps.length > 0) {
@@ -323,10 +417,11 @@ function handleAckMsg(msg) {
   }
 
   if (this.patchBuffer.length <= 0) {
-    const errMsg = 'No outstanding patches awaiting acknowledgement';
+    const errMsg = 'No patches awaiting acknowledgement';
     throw new FailedAckException(errMsg);
   }
 
+  // Dequeue the patch and delta from the patchBuffer
   const [{ patchStr, delta }] = this.patchBuffer.splice(0, 1);
   const patch = dmp.patch_fromText(patchStr);
   const [content, ok] = dmp.patch_apply(patch, this.checkpoint.content);
@@ -336,25 +431,36 @@ function handleAckMsg(msg) {
   }
   this.checkpoint.content = content;
 
-  const { selfCaret } = this.checkpoint.version[msg.version - 1];
+  // Get the client's caret position at the latest checkpoint
+  const { latest } = this.checkpoint;
+  const { selfCaret: prevCaret } = this.checkpoint.version[latest];
   const newCheckpoint = new VersionCheckpoint(
-    selfCaret,
-    this.checkpoint.version[msg.version - 1].activeUsers,
-    selfCaret,
+    prevCaret,
+    this.checkpoint.version[latest].activeUsers,
+    prevCaret,
     delta,
   );
 
+  // Apply delta to client's caret at new checkpoint
   newCheckpoint.selfCaret.start += delta.caretStart;
   newCheckpoint.selfCaret.end += delta.caretEnd;
 
+  // Shift active users' carets at new checkpoint
   Object.entries(newCheckpoint.activeUsers).forEach(([user, caret]) => {
-    newCheckpoint.activeUsers[user] = shiftCaret(caret, selfCaret, delta);
+    newCheckpoint.activeUsers[user] = shiftCaret(caret, prevCaret, delta);
   });
 
-  this.checkpoint.version[msg.version] = newCheckpoint;
-  this.checkpoint.latest = msg.version;
+  this.checkpoint.version[latest + 1] = newCheckpoint;
+  this.checkpoint.latest += 1;
 }
 
+/*
+  Handles a Sync message sent from the WebSocket. Deletes the version checkpoint
+  preceding the specified version.
+  Parameters:
+    msg, Object: payload of the Sync message
+      msg.version, int: version of the conversation
+*/
 function handleSyncMsg(msg) {
   const missingProps = checkProps(msg, syncProps);
   if (missingProps.length > 0) {
@@ -370,6 +476,12 @@ function handleSyncMsg(msg) {
   delete this.checkpoint.version[msg.version - 1];
 }
 
+/*
+  Handles a UserJoin message sent from the WebSocket. Creates a new active user.
+  Parameters:
+    msg, Object: payload of the UserJoin message
+      msg.userId, int: user ID of joining user
+*/
 function handleUserJoinMsg(msg) {
   const missingProps = checkProps(msg, userActionProps);
   if (missingProps.length > 0) {
@@ -380,6 +492,12 @@ function handleUserJoinMsg(msg) {
   this.createActiveUser(msg.userId, new Caret(0, 0));
 }
 
+/*
+  Handles a UserLeave message sent from the WebSocket. Removes an active user.
+  Parameters:
+    msg, Object: payload of the UserLeave message
+      msg.userId, int: user ID of leaving user
+*/
 function handleUserLeaveMsg(msg) {
   const missingProps = checkProps(msg, userActionProps);
   if (missingProps.length > 0) {

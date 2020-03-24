@@ -26,23 +26,23 @@ import handlers from './handlers';
 import { GOING_AWAY, userColours } from './constants';
 
 const data = () => ({
-  ws: null,
-  conversation: {},
+  ws: null, // WebSocket object
+  conversation: {}, // Conversation metadata
   checkpoint: {
-    version: {},
-    latest: -1,
-    content: '',
+    version: {}, // Map, version -> checkpoint
+    latest: -1, // Latest checkpoint version
+    content: '', // Latest checkpoint content
   },
-  version: -1,
-  content: '',
-  textSize: 0,
-  patchBuffer: [],
-  activeUsers: {},
-  caret: {
+  version: -1, // Current conversation version
+  content: '', // Current conversation content
+  textSize: 0, // Current conversation content text size
+  patchBuffer: [], // Buffer of patches awaiting acknowledgement
+  activeUsers: {}, // Map, userID -> caret position
+  caret: { // Current client caret position
     start: 0,
     end: 0,
   },
-  colourList: userColours.slice(),
+  colourList: userColours.slice(), // List of colours to use for active users
 });
 
 /* Vue instance computed functions */
