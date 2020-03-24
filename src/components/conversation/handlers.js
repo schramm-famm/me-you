@@ -505,7 +505,13 @@ function handleUserLeaveMsg(msg) {
     throw new InvalidDataException(errMsg);
   }
 
+  // Remove user from all checkpoints
+  Object.keys(this.checkpoint.version).forEach((version) => {
+    delete this.checkpoint.version[version].activeUsers[msg.userId];
+  });
+  // Remove user from active users
   delete this.activeUsers[msg.userId];
+
   const cursor = this.conversationDOM.parentNode.querySelector(`#cursor-${msg.userId}`);
   if (cursor) {
     cursor.parentNode.removeChild(cursor);
