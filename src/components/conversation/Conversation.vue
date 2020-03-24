@@ -9,14 +9,14 @@
         </div>
       </div>
     </div>
-    <div
-      id="conversation-body"
-      class="body"
-      contenteditable="true"
-      v-on:input="sendPatch"
-      v-on:keyup="handleKeyUp"
-      v-on:mouseup="sendCursorUpdate"
-    >
+    <div id="conversation-container">
+      <div
+        id="conversation-body"
+        class="body"
+        contenteditable="true"
+        v-on:input="sendPatch"
+      >
+      </div>
     </div>
   </div>
 </template>
@@ -26,15 +26,23 @@ import handlers from './handlers';
 import { GOING_AWAY, userColours } from './constants';
 
 const data = () => ({
-  ws: null,
-  conversation: {},
-  checkpoint: '',
-  version: -1,
-  content: '',
-  patchBuffer: [],
-  activeUsers: {},
-  cursorPosition: 0,
-  colourList: userColours.slice(),
+  ws: null, // WebSocket object
+  conversation: {}, // Conversation metadata
+  checkpoint: {
+    version: {}, // Map, version -> checkpoint
+    latest: -1, // Latest checkpoint version
+    content: '', // Latest checkpoint content
+  },
+  version: -1, // Current conversation version
+  content: '', // Current conversation content
+  textSize: 0, // Current conversation content text size
+  patchBuffer: [], // Buffer of patches awaiting acknowledgement
+  activeUsers: {}, // Map, userID -> caret position
+  caret: { // Current client caret position
+    start: 0,
+    end: 0,
+  },
+  colourList: userColours.slice(), // List of colours to use for active users
 });
 
 /* Vue instance computed functions */
@@ -57,6 +65,7 @@ function created() {
 
 function mounted() {
   this.conversationDOM = this.$el.querySelector('#conversation-body');
+  document.onselectionchange = this.handleSelectionChange;
   this.connectWebSocket();
 }
 
@@ -91,13 +100,21 @@ export default {
   overflow: hidden;
 }
 
+#conversation-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+  width: 100%;
+  overflow: scroll;
+}
+
 .body {
   display: inline-block;
-  color: black;
-  font-size: 12pt;
   padding: 1em;
   height: 100%;
-  overflow-y: scroll;
+  color: black;
+  font-size: 12pt;
   word-wrap: break-word;
   word-break: break-all;
   white-space: pre-wrap;
