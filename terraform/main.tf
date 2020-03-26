@@ -41,6 +41,12 @@ resource "aws_ecs_task_definition" "me-you" {
 EOF
 }
 
+resource "aws_iam_server_certificate" "me-you" {
+  name = "${var.name}-me-you"
+  certificate_body = "${file("${var.cert}")}"
+  private_key      = "${file("${var.cert_key}")}"
+}
+
 resource "aws_elb" "me-you" {
   name            = "${var.name}-me-you"
   subnets         = var.subnets
@@ -49,8 +55,9 @@ resource "aws_elb" "me-you" {
   listener {
     instance_port     = 80
     instance_protocol = "http"
-    lb_port           = 80
-    lb_protocol       = "http"
+    lb_port           = 443
+    lb_protocol       = "https"
+    ssl_certificate_id = aws_iam_server_certificate.me-you.arn
   }
 }
 
