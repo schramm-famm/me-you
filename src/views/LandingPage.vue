@@ -6,6 +6,6 @@
 
 <script>
 export default {
-  name: 'Conversations',
+  name: 'LandingPage',
 };
 </script>
