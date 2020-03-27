@@ -4,7 +4,9 @@ import Conversations from '../views/Conversations.vue';
 import Conversation from '../components/conversation/Conversation.vue';
 import ConversationsHome from '../components/ConversationsHome.vue';
 import LandingPage from '../views/LandingPage.vue';
-import auth from '../components/auth/auth';
+import Login from '../components/Login.vue';
+import Register from '../components/Register.vue';
+import auth from '../services/auth';
 
 Vue.use(VueRouter);
 
@@ -34,6 +36,16 @@ const routes = [
     path: '/',
     component: LandingPage,
     beforeEnter: checkLoggedIn,
+    children: [
+      {
+        path: '',
+        component: Login,
+      },
+      {
+        path: 'register',
+        component: Register,
+      },
+    ],
   },
   {
     path: '/conversations',
@@ -49,6 +61,13 @@ const routes = [
         component: Conversation,
       },
     ],
+  },
+  {
+    path: '/logout',
+    beforeEnter: (to, from, next) => {
+      auth.logout();
+      next('/');
+    },
   },
 ];
 

@@ -6,28 +6,25 @@
         You need to login first.
       </p>
       <form @submit.prevent="login">
-        <label><input v-model="email" placeholder="email"></label>
-        <label><input v-model="pass" placeholder="password" type="password"></label>
+        <label><input v-model="email" placeholder="email"></label><br/>
+        <label><input v-model="pass" placeholder="password" type="password"></label><br/>
         <button type="submit">login</button>
         <p v-if="error" class="error">Bad login information</p>
       </form>
+      <router-link to="/register">register</router-link>
     </div>
   </div>
 </template>
 
 <script>
-import auth from './auth';
+import auth from '../services/auth';
+import { debugLog } from '../utils';
 
 const data = () => ({
   email: '',
   pass: '',
   error: false,
 });
-
-/* Vue instance computed functions */
-function token() {
-  return this.$store.state.token;
-}
 
 /* Vue instance lifecycle hooks */
 function created() {}
@@ -39,21 +36,18 @@ export default {
   data,
   created,
   mounted,
-  computed: {
-    token,
-  },
   methods: {
     login() {
-      auth.login(this.email, this.pass, (loggedIn) => {
-        if (!loggedIn) {
-          console.log('failed to log in!');
-          this.error = true;
-        } else {
+      auth.login(this.email, this.pass)
+        .then(() => {
           console.log('logged in!');
           console.log(this.$route.query.redirect);
           this.$router.replace(this.$route.query.redirect || '/conversations');
-        }
-      });
+        })
+        .catch((err) => {
+          debugLog(err);
+          this.error = true;
+        });
     },
   },
 };

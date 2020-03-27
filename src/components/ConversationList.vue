@@ -2,6 +2,7 @@
   <div class="side">
     <div class="header">
       <h1>{{ username }}</h1>
+      <router-link to="/logout">logout</router-link>
     </div>
     <div class="conversation-list">
       <ConversationItem
