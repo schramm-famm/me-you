@@ -64,12 +64,8 @@ const getUser = ({ dispatch, commit }) => {
         commit('getUserSuccess', user);
       },
       (error) => {
-        if (error === 401) {
-          logout();
-        } else {
-          commit('getUserFailure', error);
-          dispatch('alert/error', error, { root: true });
-        }
+        commit('getUserFailure', error);
+        dispatch('alert/error', error, { root: true });
       },
     )
     .catch((error) => {

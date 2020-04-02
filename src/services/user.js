@@ -2,10 +2,16 @@ import { authHeader } from '../utils';
 
 const backend = process.env.VUE_APP_BACKEND;
 
+const logout = (callback) => {
+  localStorage.removeItem('token');
+  if (callback) callback();
+};
+
 const handleResponse = (response) => response.text().then((text) => {
   if (!response.ok) {
     if (response.status === 401) {
-      return Promise.reject(response.status);
+      logout();
+      window.location.reload(true);
     }
     const error = text || response.statusText;
     return Promise.reject(error);
@@ -32,11 +38,6 @@ const login = (email, password) => {
         return Promise.reject(err);
       },
     );
-};
-
-const logout = (callback) => {
-  localStorage.removeItem('token');
-  if (callback) callback();
 };
 
 const register = (name, email, password) => {

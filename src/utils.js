@@ -51,9 +51,9 @@ const keysToCamel = (o) => {
   return o;
 };
 
-/*
-  Returns the Authorization header with the JWT token
-*/
+/**
+ * Returns the Authorization header with the JWT token
+ */
 const authHeader = () => {
   const token = localStorage.getItem('token');
 
