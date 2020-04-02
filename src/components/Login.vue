@@ -35,13 +35,11 @@
 
 <script>
 import { mapState, mapActions } from 'vuex';
-import logo from '../assets/logo.png';
 
 const data = () => ({
   email: '',
   password: '',
   submitted: false,
-  logo,
 });
 
 /* Vue instance lifecycle hooks */
