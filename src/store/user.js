@@ -14,16 +14,10 @@ const login = ({ dispatch, commit }, { email, password, path }) => {
   commit('loginRequest', { email });
 
   userService.login(email, password)
-    .then(
-      (loginToken) => {
-        commit('loginSuccess', loginToken);
-        router.replace(path || '/conversations');
-      },
-      (error) => {
-        commit('loginFailure', error);
-        dispatch('alert/error', error, { root: true });
-      },
-    )
+    .then((loginToken) => {
+      commit('loginSuccess', loginToken);
+      router.replace(path || '/conversations');
+    })
     .catch((error) => {
       commit('loginFailure', error);
       dispatch('alert/error', error, { root: true });
@@ -39,16 +33,10 @@ const register = ({ dispatch, commit }, { name, email, password }) => {
   commit('registerRequest');
 
   userService.register(name, email, password)
-    .then(
-      () => {
-        commit('registerSuccess');
-        router.replace('/');
-      },
-      (error) => {
-        commit('registerFailure', error);
-        dispatch('alert/error', error, { root: true });
-      },
-    )
+    .then(() => {
+      commit('registerSuccess');
+      router.replace('/');
+    })
     .catch((error) => {
       commit('registerFailure', error);
       dispatch('alert/error', error, { root: true });
@@ -59,15 +47,9 @@ const getUser = ({ dispatch, commit }) => {
   commit('getUserRequest');
 
   userService.getUser()
-    .then(
-      (user) => {
-        commit('getUserSuccess', user);
-      },
-      (error) => {
-        commit('getUserFailure', error);
-        dispatch('alert/error', error, { root: true });
-      },
-    )
+    .then((user) => {
+      commit('getUserSuccess', user);
+    })
     .catch((error) => {
       commit('getUserFailure', error);
       dispatch('alert/error', error, { root: true });
