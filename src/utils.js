@@ -51,4 +51,22 @@ const keysToCamel = (o) => {
   return o;
 };
 
-export { debugLog, checkProps, keysToCamel };
+/**
+ * Returns the Authorization header with the JWT token
+ */
+const authHeader = () => {
+  const token = localStorage.getItem('token');
+
+  if (token) {
+    return { Authorization: `Bearer ${token}` };
+  }
+
+  return {};
+};
+
+export {
+  debugLog,
+  checkProps,
+  keysToCamel,
+  authHeader,
+};

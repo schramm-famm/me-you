@@ -8,6 +8,7 @@
 </template>
 
 <script>
+import { mapActions } from 'vuex';
 import ConversationList from '../components/ConversationList.vue';
 
 const getDisplayTime = (lastModifiedStr) => {
@@ -58,16 +59,7 @@ const preloadImage = (imgSrc) => {
 };
 
 function created() {
-  // TODO: Add API call to get user metadata
-  const user = {
-    name: 'Thao',
-    email: 'thaotran.lp@gmail.com',
-  };
-
-  this.$store.commit('setUser', user);
-
-  // TODO: Token should be set when user logs in
-  this.$store.commit('setToken', 'token');
+  this.getUser();
 
   // TODO: Add API call to get all conversations for the user
   const conversationsList = [
@@ -113,6 +105,9 @@ export default {
   created,
   computed: {
     conversations,
+  },
+  methods: {
+    ...mapActions('user', ['getUser']),
   },
 };
 </script>

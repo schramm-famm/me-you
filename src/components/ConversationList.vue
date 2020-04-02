@@ -1,7 +1,8 @@
 <template>
   <div class="side">
     <div class="header">
-      <h1>{{ username }}</h1>
+      <h1>{{ user.name }}</h1>
+      <router-link to="/logout">logout</router-link>
     </div>
     <div class="conversation-list">
       <ConversationItem
@@ -14,11 +15,8 @@
 </template>
 
 <script>
+import { mapState } from 'vuex';
 import ConversationItem from './ConversationItem.vue';
-
-function username() {
-  return this.$store.state.user.name;
-}
 
 function conversations() {
   return this.$store.state.conversations;
@@ -30,7 +28,7 @@ export default {
     ConversationItem,
   },
   computed: {
-    username,
+    ...mapState('user', ['user']),
     conversations,
   },
 };
