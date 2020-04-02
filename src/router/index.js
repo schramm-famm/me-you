@@ -6,36 +6,31 @@ import ConversationsHome from '../components/ConversationsHome.vue';
 import LandingPage from '../views/LandingPage.vue';
 import Login from '../components/Login.vue';
 import Register from '../components/Register.vue';
-import auth from '../services/auth';
+import { userService } from '../services';
 
 Vue.use(VueRouter);
 
-function requireAuth(to, from, next) {
-  if (!auth.loggedIn()) {
+const checkAuth = (to, from, next) => {
+  const publicPages = ['/', '/register'];
+  const authRequired = !publicPages.includes(to.path);
+  const loggedIn = !!localStorage.getItem('token');
+  if (authRequired && !loggedIn) {
     next({
       path: '/',
       query: { redirect: to.fullPath },
     });
+  } else if (!authRequired && loggedIn) {
+    next('/conversations');
   } else {
     next();
   }
-}
-
-function checkLoggedIn(to, from, next) {
-  if (auth.loggedIn()) {
-    next({
-      path: '/conversations',
-    });
-  } else {
-    next();
-  }
-}
+};
 
 const routes = [
   {
     path: '/',
     component: LandingPage,
-    beforeEnter: checkLoggedIn,
+    beforeEnter: checkAuth,
     children: [
       {
         path: '',
@@ -50,7 +45,7 @@ const routes = [
   {
     path: '/conversations',
     component: Conversations,
-    beforeEnter: requireAuth,
+    beforeEnter: checkAuth,
     children: [
       {
         path: '',
@@ -65,8 +60,7 @@ const routes = [
   {
     path: '/logout',
     beforeEnter: (to, from, next) => {
-      auth.logout();
-      next('/');
+      userService.logout(() => next('/'));
     },
   },
 ];

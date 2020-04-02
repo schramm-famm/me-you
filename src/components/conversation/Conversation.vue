@@ -58,6 +58,10 @@ function activeConversation() {
   return parseInt(this.$route.params.id, 10);
 }
 
+function backend() {
+  return this.$store.state.backend;
+}
+
 /* Vue instance lifecycle hooks */
 function created() {
   this.conversation = this.conversations[this.activeConversation];
@@ -78,6 +82,7 @@ export default {
     token,
     conversations,
     activeConversation,
+    backend,
   },
   watch: {
     conversations() {
