@@ -71,7 +71,7 @@ const getAll = ({ dispatch, commit }) => {
       commit('getAllSuccess', conversations);
     })
     .catch((error) => {
-      commit('getAllFailure', error);
+      commit('getAllFailure');
       dispatch('alert/error', error, { root: true });
     });
 };
@@ -94,7 +94,7 @@ const getAllSuccess = (currState, conversations) => {
 const getAllFailure = (currState) => {
   const newState = currState;
   newState.status = {};
-  newState.conversations = null;
+  newState.conversations = {};
 };
 
 const getOneSuccess = (currState, conversation) => {

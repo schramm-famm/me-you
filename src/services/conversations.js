@@ -7,7 +7,8 @@ const getAll = () => {
   };
 
   return fetch(`https://${utils.backend}/ether/v1/conversations`, requestOptions)
-    .then(utils.handleResponse);
+    .then(utils.handleResponse)
+    .then((json) => json.conversations);
 };
 
 export default {
