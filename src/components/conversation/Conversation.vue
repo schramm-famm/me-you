@@ -2,10 +2,12 @@
   <div class="conversation">
     <div class="header">
       <div class="header-content">
-        <img class="avatar" v-bind:src="conversation.avatar_url">
-        <div>
-          <h1>{{ conversation.name }}</h1>
-          <h2>last modified {{ conversation.last_modified_display }}</h2>
+        <div class="header-info">
+          <img class="avatar" v-bind:src="conversation.avatar_url">
+          <div>
+            <h1>{{ conversation.name }}</h1>
+            <h2>last modified {{ conversation.last_modified_display }}</h2>
+          </div>
         </div>
       </div>
     </div>
@@ -22,8 +24,10 @@
 </template>
 
 <script>
+import { mapState } from 'vuex';
 import handlers from './handlers';
 import { GOING_AWAY, userColours } from './constants';
+import { utilsService } from '../../services';
 
 const data = () => ({
   ws: null, // WebSocket object
@@ -43,23 +47,12 @@ const data = () => ({
     end: 0,
   },
   colourList: userColours.slice(), // List of colours to use for active users
+  backend: utilsService.backend,
 });
 
 /* Vue instance computed functions */
-function token() {
-  return this.$store.state.token;
-}
-
-function conversations() {
-  return this.$store.state.conversations;
-}
-
 function activeConversation() {
   return parseInt(this.$route.params.id, 10);
-}
-
-function backend() {
-  return this.$store.state.backend;
 }
 
 /* Vue instance lifecycle hooks */
@@ -79,10 +72,9 @@ export default {
   created,
   mounted,
   computed: {
-    token,
-    conversations,
+    ...mapState('user', ['user']),
+    ...mapState('conversations', ['conversations']),
     activeConversation,
-    backend,
   },
   watch: {
     conversations() {
@@ -90,7 +82,7 @@ export default {
     },
     activeConversation() {
       this.ws.close(GOING_AWAY);
-      this.connectWebSocket();
+      this.connectWebSocket(this.backend);
     },
   },
   mixins: [handlers],
