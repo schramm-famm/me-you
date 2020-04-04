@@ -111,7 +111,8 @@ h2 {
   padding: .25em;
 }
 
-.form-group > a {
+.form-group > a, .form-group > button {
+  font-size: 14pt;
   text-align: center;
   margin: .25em;
   padding: .5em;
@@ -119,9 +120,13 @@ h2 {
   border-radius: 0.25em;
   background-color: black;
   color: white;
-  cursor: pointer;
   width: 100%;
   text-decoration: none;
+}
+
+.form-group > a:hover, .form-group > button:hover {
+  cursor: pointer;
+  background-color: darkgrey;
 }
 
 .invalid {
