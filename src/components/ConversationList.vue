@@ -13,11 +13,11 @@
     <MoreMenu v-show="more" />
     <div class="conversation-list">
       <ConversationItem
-        v-for="conversation in conversations"
-        :key="conversation.id"
-        :id="conversation.id"
+        v-for="id in conversationsSorted"
+        :key="id"
+        :id="id"
       ></ConversationItem>
-      <div class="welcome" v-show="!Object.keys(conversations).length">
+      <div class="welcome" v-show="!conversationsSorted.length">
         Click the '+' to create a conversation!
       </div>
     </div>
@@ -25,7 +25,7 @@
 </template>
 
 <script>
-import { mapState, mapActions } from 'vuex';
+import { mapState, mapActions, mapMutations } from 'vuex';
 import ConversationItem from './ConversationItem.vue';
 import MoreMenu from './MoreMenu.vue';
 import Add from '../assets/add-24px.svg';
@@ -38,6 +38,7 @@ const data = () => ({
 function created() {
   this.getAll();
   this.getUser();
+  window.setInterval(this.updateDisplayTime, 60000);
 }
 
 export default {
@@ -52,11 +53,12 @@ export default {
   created,
   computed: {
     ...mapState('user', ['user']),
-    ...mapState('conversations', ['conversations']),
+    ...mapState('conversations', ['conversationsSorted']),
   },
   methods: {
     ...mapActions('conversations', ['getAll']),
     ...mapActions('user', ['getUser']),
+    ...mapMutations('conversations', ['updateDisplayTime']),
   },
 };
 </script>
