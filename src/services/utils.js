@@ -28,9 +28,46 @@ const authHeader = () => {
   return {};
 };
 
+const isArray = (a) => Array.isArray(a);
+
+const isObject = (o) => (
+  o === Object(o) && !isArray(o) && typeof o !== 'function'
+);
+
+const toCamel = (s) => s.replace(
+  /([_][a-z])/ig,
+  ($1) => $1.toUpperCase().replace('_', ''),
+);
+
+const toSnake = (s) => s.replace(
+  /([A-Z])/g,
+  ($1) => `_${$1.toLowerCase()}`,
+);
+
+const formatKeys = (o, formatFunc) => {
+  if (isObject(o)) {
+    const n = {};
+
+    Object.keys(o)
+      .forEach((k) => {
+        n[formatFunc(k)] = formatKeys(o[k], formatFunc);
+      });
+
+    return n;
+  }
+  if (isArray(o)) {
+    return o.map((i) => formatKeys(i, formatFunc));
+  }
+
+  return o;
+};
+
 export default {
   backend,
   logout,
   handleResponse,
   authHeader,
+  toCamel,
+  toSnake,
+  formatKeys,
 };
