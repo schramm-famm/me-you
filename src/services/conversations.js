@@ -17,7 +17,6 @@ const create = (name, description, avatarURL) => {
     headers: { ...utils.authHeader(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, description, avatar_url: avatarURL }),
   };
-  console.log(requestOptions);
 
   return fetch(`https://${utils.backend}/ether/v1/conversations`, requestOptions)
     .then(utils.handleResponse);
