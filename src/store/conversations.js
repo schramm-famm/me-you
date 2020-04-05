@@ -99,6 +99,21 @@ const getAll = ({ dispatch, commit }) => {
     });
 };
 
+const create = ({ dispatch, commit }, { name, description, avatarURL }) => {
+  commit('createRequest');
+
+  convService.create(name, description, avatarURL)
+    .then(() => dispatch('getAll'))
+    .then(() => {
+      commit('createSuccess');
+    })
+    .catch((error) => {
+      commit('createFailure');
+      dispatch('alert/error', error, { root: true });
+    });
+};
+
+
 const open = ({ dispatch, commit }, { id, token, el }) => {
   commit('openRequest', id);
 
@@ -142,6 +157,7 @@ const open = ({ dispatch, commit }, { id, token, el }) => {
 
 const actions = {
   getAll,
+  create,
   open,
 };
 
@@ -169,6 +185,24 @@ const getAllFailure = (currState) => {
   const newState = currState;
   newState.status = {};
   newState.conversations = {};
+};
+
+const createRequest = (currState) => {
+  console.log('createRequest');
+  const newState = currState;
+  newState.status = { gettingConvs: true };
+};
+
+const createSuccess = (currState) => {
+  console.log('createSuccess');
+  const newState = currState;
+  newState.status = { createdConvs: true };
+};
+
+const createFailure = (currState) => {
+  console.log('createFailure');
+  const newState = currState;
+  newState.status = {};
 };
 
 const updateDisplayTime = (currState) => {
@@ -352,6 +386,9 @@ const mutations = {
   getAllRequest,
   getAllSuccess,
   getAllFailure,
+  createRequest,
+  createSuccess,
+  createFailure,
   getOneSuccess,
   updateDisplayTime,
   openRequest,
