@@ -11,13 +11,15 @@
         <div v-show="submitted && missingEmail" class="error">Email is required</div>
       </div>
       <div class="form-group">
-        <input
-          type="checkbox"
-          id="admin"
-          value="admin"
-          v-model="admin"
-        >
-        <label for="admin">Admin</label><br>
+        <div class="check-input">
+          <input
+            type="checkbox"
+            id="admin"
+            value="admin"
+            v-model="admin"
+          >
+          <label for="admin">Admin</label><br>
+        </div>
       </div>
       <div class="form-group">
         <button type="submit" :disabled="status.addUserRequest">
