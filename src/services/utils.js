@@ -17,9 +17,9 @@ const handleResponse = (response) => response.text().then((text) => {
   return JSON.parse(text);
 });
 
-/*
-  Returns the Authorization header with the JWT token
-*/
+/**
+ * Returns the Authorization header with the JWT token
+ */
 const authHeader = () => {
   const token = localStorage.getItem('token');
   if (token) {

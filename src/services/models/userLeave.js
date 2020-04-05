@@ -12,7 +12,7 @@ class UserLeave extends WSMessage {
   }
 
   /**
-  * handle adds a new active user to the state specified by the UserJoin.
+  * handle removes an active user from the state specified by the UserLeave.
   * Required Parameters:
   *   state: object
   *     state.el: DOMElement

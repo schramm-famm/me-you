@@ -84,7 +84,7 @@ class WSMessage {
   }
 
   /**
-  * fromJSON parse JSON string into a WSMessage instance.
+  * fromJSON parses JSON string into a WSMessage instance.
   * Parameters:
   *   json: string
   * Returns: WSMessage
