@@ -55,7 +55,7 @@ class UserLeave extends WSMessage {
       );
     }
 
-    return new UserLeave(data.version);
+    return new UserLeave(data.userId);
   }
 }
 
