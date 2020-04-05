@@ -10,14 +10,23 @@ class ActiveUser {
   */
   constructor(id, caret, colour) {
     this.id = id;
-    this.caret = caret;
+    this.caret = caret.copy();
     this.colour = colour;
   }
 
-  setDOM(el) {
-    el.setActiveUserCaret(this.caret, this.id, this.colour);
+  /**
+  * copy returns a new ActiveUser instance with the current instance's
+  * properties' values.
+  * Returns: ActiveUser
+  */
+  copy() {
+    return new ActiveUser(this.id, this.caret, this.colour);
   }
 
+  /**
+  * addTo creates and adds an ActiveUser to a state.
+  * Returns: ActiveUser
+  */
   static addTo(state, id, caret) {
     const { latest, version } = state.checkpoint;
 
@@ -36,7 +45,7 @@ class ActiveUser {
       state.colourList = [...ActiveUser.colours];
     }
 
-    state.activeUsers[id].setDOM(state.el);
+    state.el.setActiveUserCaret(state.activeUsers[id]);
   }
 }
 

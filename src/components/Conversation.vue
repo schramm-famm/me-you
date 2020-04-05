@@ -30,7 +30,7 @@
 
 <script>
 import { mapState, mapActions, mapMutations } from 'vuex';
-import { WSException, DOMElement } from '../../services/models';
+import { WSException, DOMElement } from '../services/models';
 
 /*
 const data = () => ({

@@ -138,8 +138,8 @@ class Update extends WSMessage {
     state.el.setCaret(state.caret);
 
     // Set the active users' carts in the DOM
-    Object.entries(state.activeUsers).forEach(([user, { caret, colour }]) => {
-      state.el.setActiveUserCaret(caret, user, colour);
+    Object.values(state.activeUsers).forEach((activeUser) => {
+      state.el.setActiveUserCaret(activeUser);
     });
 
     return state;
@@ -197,7 +197,7 @@ class Update extends WSMessage {
       selfCaret.end += delta.caretEnd;
     });
 
-    state.activeUsers[userId].setDOM(state.el);
+    state.el.setActiveUserCaret(state.activeUsers[userId]);
 
     return state;
   }
