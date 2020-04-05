@@ -180,10 +180,12 @@ const updateDisplayTime = (currState) => {
     conversation.last_modified_display = getDisplayTime(conversation.last_modified);
   });
   newState.conversations = { ...conversations };
-  newState.conversation = {
-    ...newState.conversation,
-    metadata: conversations[newState.conversation.metadata.id],
-  };
+  if (newState.conversation.metadata) {
+    newState.conversation = {
+      ...newState.conversation,
+      metadata: conversations[newState.conversation.metadata.id],
+    };
+  }
 };
 
 const getOneSuccess = (currState, conversation) => {
