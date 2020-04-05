@@ -15,7 +15,7 @@
         <div v-show="submitted && !password" class="error">Password is required</div>
       </div>
       <div class="form-group">
-        <button type="submit" v-on:click="handleSubmit">Register</button>
+        <button type="submit">Register</button>
         <router-link to="/">Login</router-link>
       </div>
     </form>
