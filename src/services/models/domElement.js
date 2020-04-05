@@ -171,11 +171,10 @@ class DOMElement {
   * setActiveUserCaret modifies the DOM to display a representation of the
   * active user's caret.
   * Parameters:
-  *   position: Caret
-  *   id, int: the active user's id
-  *   colour, string: the colour to use for the caret
+  *   activeUser: ActiveUser
   */
-  setActiveUserCaret(position, id, colour) {
+  setActiveUserCaret(activeUser) {
+    const { id, caret: { start, end }, colour } = activeUser;
     const { parentNode } = this.el;
     let cursor = parentNode.querySelector(`#cursor-${id}`);
     if (!cursor) {
@@ -186,8 +185,6 @@ class DOMElement {
     } else {
       cursor = cursor.parentNode.removeChild(cursor);
     }
-
-    const { start, end } = position;
 
     const startData = this.getCaretData(start);
     if (!startData.node) {

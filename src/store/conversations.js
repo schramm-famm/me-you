@@ -312,7 +312,7 @@ const handleInput = (currState) => {
   // position
   Object.keys(activeUsers).forEach((user) => {
     activeUsers[user].caret.shiftCaret(caret, delta);
-    activeUsers[user].setDOM(el);
+    el.setActiveUserCaret(activeUsers[user]);
   });
 
   newState.conversation = {

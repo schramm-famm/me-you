@@ -9,7 +9,11 @@ class Checkpoint {
   */
   constructor(selfCaret, activeUsers, senderCaret, delta) {
     this.selfCaret = selfCaret.copy();
-    this.activeUsers = { ...activeUsers };
+    this.activeUsers = {};
+    Object.entries(activeUsers).forEach(([id, activeUser]) => {
+      this.activeUsers[id] = activeUser.copy();
+    });
+
     if (senderCaret) {
       this.senderCaret = senderCaret.copy();
     }
