@@ -42,8 +42,19 @@ const getUser = () => {
     .then(utils.handleResponse);
 };
 
+const getUserByEmail = (email) => {
+  const requestOptions = {
+    method: 'GET',
+    headers: { ...utils.authHeader(), 'Content-Type': 'application/json' },
+  };
+
+  return fetch(`https://${utils.backend}/karen/v1/users?email=${email}`, requestOptions)
+    .then(utils.handleResponse);
+};
+
 export default {
   login,
   register,
   getUser,
+  getUserByEmail,
 };

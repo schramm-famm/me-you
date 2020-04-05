@@ -18,9 +18,9 @@
         />
       </div>
       <div class="form-group">
-          <button type="submit" :disabled="status.createRequest">
-            Create Conversation
-          </button>
+        <button type="submit" :disabled="status.createRequest">
+          Create Conversation
+        </button>
       </div>
     </form>
     <p v-if="alert.type === 'alert-danger'" class="error">
