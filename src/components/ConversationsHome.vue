@@ -20,11 +20,4 @@ export default {
   flex: 1;
   flex-direction: column;
 }
-
-.welcome {
-  display: flex;
-  height: 100%;
-  justify-content: center;
-  align-items: center;
-}
 </style>

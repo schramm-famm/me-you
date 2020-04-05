@@ -1,23 +1,4 @@
-import { authHeader } from '../utils';
-
-const backend = process.env.VUE_APP_BACKEND;
-
-const logout = (callback) => {
-  localStorage.removeItem('token');
-  if (callback) callback();
-};
-
-const handleResponse = (response) => response.text().then((text) => {
-  if (!response.ok) {
-    if (response.status === 401) {
-      logout();
-      window.location.reload(true);
-    }
-    const error = text || response.statusText;
-    return Promise.reject(error);
-  }
-  return JSON.parse(text);
-});
+import utils from './utils';
 
 const login = (email, password) => {
   const requestOptions = {
@@ -26,8 +7,8 @@ const login = (email, password) => {
     body: JSON.stringify({ email, password }),
   };
 
-  return fetch(`https://${backend}/heimdall/v1/token`, requestOptions)
-    .then(handleResponse)
+  return fetch(`https://${utils.backend}/heimdall/v1/token`, requestOptions)
+    .then(utils.handleResponse)
     .then(
       (json) => {
         localStorage.setItem('token', json.token);
@@ -47,23 +28,22 @@ const register = (name, email, password) => {
     body: JSON.stringify({ name, email, password }),
   };
 
-  return fetch(`https://${backend}/karen/v1/users`, requestOptions)
-    .then(handleResponse);
+  return fetch(`https://${utils.backend}/karen/v1/users`, requestOptions)
+    .then(utils.handleResponse);
 };
 
 const getUser = () => {
   const requestOptions = {
     method: 'GET',
-    headers: { ...authHeader(), 'Content-Type': 'application/json' },
+    headers: { ...utils.authHeader(), 'Content-Type': 'application/json' },
   };
 
-  return fetch(`https://${backend}/karen/v1/users/self`, requestOptions)
-    .then(handleResponse);
+  return fetch(`https://${utils.backend}/karen/v1/users/self`, requestOptions)
+    .then(utils.handleResponse);
 };
 
 export default {
   login,
-  logout,
   register,
   getUser,
 };

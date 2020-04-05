@@ -1,4 +1,4 @@
-import { userService } from '../services';
+import { userService, utilsService } from '../services';
 import router from '../router';
 
 const token = localStorage.getItem('token');
@@ -25,8 +25,8 @@ const login = ({ dispatch, commit }, { email, password, path }) => {
 };
 
 const logout = ({ commit }) => {
-  userService.logout(() => router.push('/'));
-  commit('logout');
+  utilsService.logout(() => router.push('/'));
+  commit('logoutSuccess');
 };
 
 const register = ({ dispatch, commit }, { name, email, password }) => {
@@ -65,8 +65,9 @@ const actions = {
 
 /* Mutations */
 const loginRequest = (currState, email) => {
-  state.status = { loggingIn: true };
-  state.user = { email };
+  const newState = currState;
+  newState.status = { loggingIn: true };
+  newState.user = { email };
 };
 
 const loginSuccess = (currState, loginToken) => {
@@ -76,6 +77,12 @@ const loginSuccess = (currState, loginToken) => {
 };
 
 const loginFailure = (currState) => {
+  const newState = currState;
+  newState.status = {};
+  newState.user = null;
+};
+
+const logoutSuccess = (currState) => {
   const newState = currState;
   newState.status = {};
   newState.user = null;
@@ -117,7 +124,7 @@ const mutations = {
   loginRequest,
   loginSuccess,
   loginFailure,
-  logout,
+  logoutSuccess,
   registerRequest,
   registerSuccess,
   registerFailure,

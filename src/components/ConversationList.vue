@@ -1,41 +1,71 @@
 <template>
   <div class="side">
     <div class="header">
-      <h1>{{ user.name }}</h1>
-      <router-link to="/logout">logout</router-link>
+      <div class="header-content">
+        <h1 v-show="!user.avatar_url">{{ user.name }}</h1>
+        <img v-show="user.avatar_url" class="avatar" v-bind:src="user.avatar_url">
+        <div class="header-options">
+          <Add />
+          <More v-on:click="more = !more"/>
+        </div>
+      </div>
     </div>
+    <MoreMenu v-show="more" />
     <div class="conversation-list">
       <ConversationItem
-        v-for="conversation in conversations"
-        :key="conversation.id"
-        :id="conversation.id"
+        v-for="id in conversationsSorted"
+        :key="id"
+        :id="id"
       ></ConversationItem>
+      <div class="welcome" v-show="!conversationsSorted.length">
+        Click the '+' to create a conversation!
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { mapState } from 'vuex';
+import { mapState, mapActions, mapMutations } from 'vuex';
 import ConversationItem from './ConversationItem.vue';
+import MoreMenu from './MoreMenu.vue';
+import Add from '../assets/add-24px.svg';
+import More from '../assets/more_vert-24px.svg';
 
-function conversations() {
-  return this.$store.state.conversations;
+const data = () => ({
+  more: false,
+});
+
+function created() {
+  this.getAll();
+  this.getUser();
+  window.setInterval(this.updateDisplayTime, 60000);
 }
 
 export default {
   name: 'ConversationList',
   components: {
     ConversationItem,
+    Add,
+    More,
+    MoreMenu,
   },
+  data,
+  created,
   computed: {
     ...mapState('user', ['user']),
-    conversations,
+    ...mapState('conversations', ['conversationsSorted']),
+  },
+  methods: {
+    ...mapActions('conversations', ['getAll']),
+    ...mapActions('user', ['getUser']),
+    ...mapMutations('conversations', ['updateDisplayTime']),
   },
 };
 </script>
 
 <style>
 .side {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;

@@ -21,9 +21,9 @@
         <div v-show="submitted && !password" class="error">Password is required</div>
       </div>
       <div class="form-group">
-          <a class="btn btn-primary" :disabled="status.loggingIn" v-on:click="handleSubmit">
+          <button type="submit" :disabled="status.loggingIn">
             Login
-          </a>
+          </button>
           <router-link to="/register">Register</router-link>
       </div>
     </form>
@@ -35,13 +35,11 @@
 
 <script>
 import { mapState, mapActions } from 'vuex';
-import logo from '../assets/logo.png';
 
 const data = () => ({
   email: '',
   password: '',
   submitted: false,
-  logo,
 });
 
 /* Vue instance lifecycle hooks */

@@ -2,10 +2,17 @@
   <div class="conversation">
     <div class="header">
       <div class="header-content">
-        <img class="avatar" v-bind:src="conversation.avatar_url">
-        <div>
-          <h1>{{ conversation.name }}</h1>
-          <h2>last modified {{ conversation.last_modified_display }}</h2>
+        <div class="header-info">
+          <img
+            class="avatar"
+            v-bind:src="conversation.metadata.avatar_url"
+          >
+          <div>
+            <h1>{{ conversation.metadata.name }}</h1>
+            <h2 v-show="conversation.metadata.last_modified_display">
+              last modified {{ conversation.metadata.last_modified_display }}
+            </h2>
+          </div>
         </div>
       </div>
     </div>
@@ -14,7 +21,7 @@
         id="conversation-body"
         class="body"
         contenteditable="true"
-        v-on:input="sendPatch"
+        v-on:input="handleInput"
       >
       </div>
     </div>
@@ -22,9 +29,10 @@
 </template>
 
 <script>
-import handlers from './handlers';
-import { GOING_AWAY, userColours } from './constants';
+import { mapState, mapActions, mapMutations } from 'vuex';
+import { WSException, DOMElement } from '../services/models';
 
+/*
 const data = () => ({
   ws: null, // WebSocket object
   conversation: {}, // Conversation metadata
@@ -43,57 +51,58 @@ const data = () => ({
     end: 0,
   },
   colourList: userColours.slice(), // List of colours to use for active users
+  backend: utilsService.backend,
 });
+*/
 
 /* Vue instance computed functions */
-function token() {
-  return this.$store.state.token;
-}
-
-function conversations() {
-  return this.$store.state.conversations;
-}
-
 function activeConversation() {
   return parseInt(this.$route.params.id, 10);
 }
 
-function backend() {
-  return this.$store.state.backend;
-}
-
 /* Vue instance lifecycle hooks */
-function created() {
-  this.conversation = this.conversations[this.activeConversation];
-}
-
 function mounted() {
-  this.conversationDOM = this.$el.querySelector('#conversation-body');
+  const el = new DOMElement(this.$el.querySelector('#conversation-body'));
   document.onselectionchange = this.handleSelectionChange;
-  this.connectWebSocket();
+  this.open({ id: this.activeConversation, token: this.user.token, el });
 }
 
 export default {
   name: 'Conversation',
-  data,
-  created,
   mounted,
   computed: {
-    token,
-    conversations,
+    ...mapState('user', ['user']),
+    ...mapState('conversations', ['conversations', 'conversation', 'status']),
     activeConversation,
-    backend,
   },
   watch: {
-    conversations() {
-      this.conversation = this.conversations[this.activeConversation];
-    },
     activeConversation() {
-      this.ws.close(GOING_AWAY);
-      this.connectWebSocket();
+      const el = new DOMElement(this.$el.querySelector('#conversation-body'));
+      console.log(`activeConversation: ${this.activeConversation}`);
+      if (this.conversation.ws) {
+        this.close(WSException.GOING_AWAY);
+      }
+      this.open({ id: this.activeConversation, token: this.user.token, el });
+    },
+    conversation() {
+      console.log('conversation:');
+      console.log({ ...this.conversation });
+    },
+    status() {
+      console.log('status:');
+      console.log({ ...this.status });
     },
   },
-  mixins: [handlers],
+  methods: {
+    ...mapActions('conversations', ['open']),
+    ...mapMutations('conversations', [
+      'setConversation',
+      'setDOMElement',
+      'handleInput',
+      'handleSelectionChange',
+      'close',
+    ]),
+  },
 };
 </script>
 
