@@ -240,6 +240,12 @@ const handleSelectionChange = (currState) => {
     newCaret.start - conversation.caret.start,
     newCaret.end - conversation.caret.end,
   );
+
+  // Prevent empty caret updates from being sent
+  if (delta.caretStart === 0 && delta.caretEnd === 0) {
+    return;
+  }
+
   const update = new Update(Update.types.Caret, delta, conversation.version);
   update.send(conversation.ws);
 
