@@ -1,6 +1,6 @@
 <template>
   <div class="popup-menu">
-    <div v-on:click="handleLogout">Logout</div>
+    <div v-on:click="handleLogout" class="popup-button">Logout</div>
   </div>
 </template>
 

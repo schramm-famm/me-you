@@ -82,6 +82,11 @@ h2 {
   color: var(--red);
 }
 
+.success {
+  font-size: 10pt;
+  color: var(--dark-green);
+}
+
 .title {
   font-size: 24pt;
   font-weight: lighter;
@@ -204,7 +209,7 @@ h2 {
   width: 100%;
 }
 
-.popup-menu > *:hover {
+.popup-menu > .popup-button:hover {
   cursor: pointer;
   background-color: var(--offwhite);
 }

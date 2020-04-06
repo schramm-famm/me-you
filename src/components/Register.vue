@@ -19,12 +19,8 @@
         <router-link to="/">Login</router-link>
       </div>
     </form>
-    <p
-      v-if="alert.type === 'alert-danger'"
-      class="error"
-      :disabled="status.registering"
-    >
-      {{ alert.message }}
+    <p v-if="alert.register && alert.register.type === 'alert-danger'" class="error">
+      {{ alert.register.message }}
     </p>
   </div>
 </template>

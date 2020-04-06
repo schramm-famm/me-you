@@ -92,11 +92,11 @@ const getAll = ({ dispatch, commit }) => {
       });
 
       commit('getAllSuccess', { conversations, conversationsSorted });
-      dispatch('alert/success', 'Got all conversations', { root: true });
+      dispatch('alert/success', { key: 'getAllConv', message: 'Got all conversations' }, { root: true });
     })
     .catch((error) => {
       commit('getAllFailure');
-      dispatch('alert/error', error, { root: true });
+      dispatch('alert/error', { key: 'getAllConv', message: error }, { root: true });
     });
 };
 
@@ -107,11 +107,11 @@ const create = ({ dispatch, commit }, { name, description, avatarURL }) => {
     .then(() => dispatch('getAll'))
     .then(() => {
       commit('createSuccess');
-      dispatch('alert/success', 'Created conversations', { root: true });
+      dispatch('alert/success', { key: 'createConv', message: 'Created conversation' }, { root: true });
     })
     .catch((error) => {
       commit('createFailure');
-      dispatch('alert/error', error, { root: true });
+      dispatch('alert/error', { key: 'createConv', message: error }, { root: true });
     });
 };
 
@@ -122,11 +122,11 @@ const addUser = ({ dispatch, commit }, { conversationID, email, role }) => {
     .then((json) => convService.addUser(conversationID, json.id, role))
     .then(() => {
       commit('addUserSuccess');
-      dispatch('alert/success', 'Added a user to a conversation', { root: true });
+      dispatch('alert/success', { key: 'addUserToConv', message: 'Added a user to conversation' }, { root: true });
     })
     .catch((error) => {
       commit('addUserFailure');
-      dispatch('alert/error', error, { root: true });
+      dispatch('alert/error', { key: 'addUserToConv', message: error }, { root: true });
     });
 };
 
@@ -156,7 +156,7 @@ const open = ({ dispatch, commit }, { id, token, el }) => {
           } else {
             ws.close(WSException.INTERNAL_ERROR, error.message);
           }
-          dispatch('alert/error', error.message, { root: true });
+          dispatch('alert/error', { key: 'openWS', message: error.message }, { root: true });
         }
       };
       ws.onerror = (e) => {
@@ -167,7 +167,7 @@ const open = ({ dispatch, commit }, { id, token, el }) => {
     .catch((error) => {
       console.log(error);
       commit('openFailure');
-      dispatch('alert/error', error, { root: true });
+      dispatch('alert/error', { key: 'openWS', message: error }, { root: true });
     });
 };
 

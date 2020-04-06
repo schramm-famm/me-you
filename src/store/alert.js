@@ -1,37 +1,39 @@
 const namespaced = true;
 
 const state = {
-  type: null,
-  message: null,
+  message: {},
 };
 
 const actions = {
-  success({ commit }, message) {
-    commit('success', message);
+  success({ commit }, { key, message }) {
+    commit('success', { key, message });
   },
-  error({ commit }, message) {
-    commit('error', message);
+  error({ commit }, { key, message }) {
+    commit('error', { key, message });
   },
-  clear({ commit }) {
-    commit('clear');
+  clear({ commit }, key) {
+    commit('clear', key);
   },
 };
 
 const mutations = {
-  success(prevState, message) {
+  success(prevState, { key, message }) {
     const newState = prevState;
-    newState.type = 'alert-success';
-    newState.message = message;
+    newState[key] = {
+      type: 'alert-success',
+      message,
+    };
   },
-  error(prevState, message) {
+  error(prevState, { key, message }) {
     const newState = prevState;
-    newState.type = 'alert-danger';
-    newState.message = message;
+    newState[key] = {
+      type: 'alert-danger',
+      message,
+    };
   },
-  clear(prevState) {
+  clear(prevState, key) {
     const newState = prevState;
-    newState.type = null;
-    newState.message = null;
+    delete newState[key];
   },
 };
 

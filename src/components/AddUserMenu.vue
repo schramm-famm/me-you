@@ -27,8 +27,11 @@
         </button>
       </div>
     </form>
-    <p v-if="alert.type === 'alert-danger'" class="error">
-      {{ alert.message }}
+    <p v-if="alert.addUserToConv && alert.addUserToConv.type === 'alert-danger'" class="error">
+      {{ alert.addUserToConv.message }}
+    </p>
+    <p v-if="alert.addUserToConv && alert.addUserToConv.type === 'alert-success'" class="success">
+      {{ alert.addUserToConv.message }}
     </p>
   </div>
 </template>
@@ -43,9 +46,14 @@ const data = () => ({
   missingEmail: false,
 });
 
+function destroyed() {
+  this.clear('addUserToConv');
+}
+
 export default {
   name: 'AddUserMenu',
   data,
+  destroyed,
   computed: {
     ...mapState('conversations', ['status', 'conversation']),
     ...mapState({
@@ -54,7 +62,7 @@ export default {
   },
   methods: {
     ...mapActions('conversations', ['addUser']),
-    ...mapActions('alert', ['error']),
+    ...mapActions('alert', ['clear']),
     handleAddUser() {
       this.submitted = true;
       const { email, admin } = this;
@@ -67,7 +75,7 @@ export default {
         this.email = '';
         this.admin = false;
       } else {
-        this.missingName = true;
+        this.missingEmail = true;
       }
     },
   },

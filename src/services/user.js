@@ -8,7 +8,7 @@ const login = (email, password) => {
   };
 
   return fetch(`https://${utils.backend}/heimdall/v1/token`, requestOptions)
-    .then(utils.handleResponse)
+    .then((res) => utils.handleResponse(res, false))
     .then(
       (json) => {
         localStorage.setItem('token', json.token);
@@ -29,7 +29,7 @@ const register = (name, email, password) => {
   };
 
   return fetch(`https://${utils.backend}/karen/v1/users`, requestOptions)
-    .then(utils.handleResponse);
+    .then((res) => utils.handleResponse(res, false));
 };
 
 const getUser = () => {
