@@ -420,6 +420,10 @@ const closeSuccess = (currState, e) => {
   console.log(`Closed WebSocket connection for conversation ${currState.conversation.metadata.id}: ${e.reason}`);
 
   const newState = currState;
+  Object.values(newState.conversation.activeUsers).forEach((activeUser) => {
+    newState.conversation.el.removeActiveUserCaret(activeUser);
+  });
+
   newState.conversation = { ...conversationState };
 };
 

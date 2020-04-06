@@ -30,6 +30,7 @@ class WSMessage {
   *   ws: WebSocket
   */
   send(ws) {
+    console.log(this);
     ws.send(this.toString());
   }
 

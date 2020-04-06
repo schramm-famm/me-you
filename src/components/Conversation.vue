@@ -70,7 +70,6 @@ export default {
   watch: {
     activeConversation() {
       const el = new DOMElement(this.$el.querySelector('#conversation-body'));
-      console.log(`activeConversation: ${this.activeConversation}`);
       if (this.conversation.ws) {
         this.close(WSException.GOING_AWAY);
       }

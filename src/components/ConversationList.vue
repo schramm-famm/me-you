@@ -36,12 +36,18 @@ import More from '../assets/more_vert-24px.svg';
 const data = () => ({
   more: false,
   createConversation: false,
+  intervalID: 0,
 });
 
 function created() {
   this.getAll();
   this.getUser();
-  window.setInterval(this.updateDisplayTime, 60000);
+  this.intervalID = window.setInterval(this.updateDisplayTime, 60000);
+}
+
+function destroyed() {
+  // Stop updating conversation display times
+  window.clearInterval(this.intervalID);
 }
 
 export default {
@@ -55,6 +61,7 @@ export default {
   },
   data,
   created,
+  destroyed,
   computed: {
     ...mapState('user', ['user']),
     ...mapState('conversations', ['conversationsSorted']),
