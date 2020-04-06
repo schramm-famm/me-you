@@ -358,6 +358,7 @@ const handleInput = (currState) => {
   );
 
   // Send an Edit Update message for each patch
+  let firstPatch = true;
   patches.forEach((patch) => {
     version += 1;
 
@@ -366,15 +367,17 @@ const handleInput = (currState) => {
       return;
     }
 
+    const updateDelta = firstPatch ? delta : new Delta(0, 0, 0);
     const update = new Update(
       Update.types.Edit,
-      delta,
+      updateDelta,
       version,
       patchStr,
     );
     update.send(ws);
 
     patchBuffer.push({ patchStr, delta });
+    firstPatch = false;
   });
 
   // Shift each active users' caret position and update the DOM with the new
