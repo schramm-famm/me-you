@@ -94,6 +94,10 @@ class DOMElement {
     return a;
   }
 
+  /**
+   * getAllDivNodes gets all of the <div> nodes within the DOM Element.
+   * Returns: Node[]
+   */
   getAllDivNodes() {
     const allNodes = this.getAllNodes();
     return allNodes.filter((node) => node.nodeName.toUpperCase() === 'DIV');
@@ -142,7 +146,7 @@ class DOMElement {
       }
     }
 
-    return { node, offset, newLines: divCount };
+    return { node, offset };
   }
 
   /**
