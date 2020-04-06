@@ -42,6 +42,9 @@ class Init extends WSMessage {
     state.checkpoint.latest = state.version;
     state.caret = new Caret(0, 0);
     state.checkpoint.version[state.version] = new Checkpoint(state.caret, {});
+    if (state.content === '') {
+      state.content = '<div></div';
+    }
     state.el.setInnerHTML(state.content);
     state.textSize = state.el.getTextSize();
 
