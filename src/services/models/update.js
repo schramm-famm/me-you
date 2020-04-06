@@ -65,15 +65,11 @@ class Update extends WSMessage {
       delta,
     );
 
-    console.log(selfCaret);
-
     // Shift client checkpoint caret
     if (selfCaret) {
       newCheckpoint.selfCaret.shiftCaret(senderCaret, delta);
       selfCaret = newCheckpoint.selfCaret.copy();
     }
-
-    console.log(selfCaret);
 
     // Shift active users' checkpoint carets
     Object.entries(newCheckpoint.activeUsers).forEach(([user, caret]) => {
@@ -85,8 +81,8 @@ class Update extends WSMessage {
       } else {
         newCaret.shiftCaret(senderCaret, delta);
       }
-      newCheckpoint.activeUsers[user] = newCaret;
-      state.activeUsers[user].caret = newCaret;
+      newCheckpoint.activeUsers[user] = newCaret.copy();
+      state.activeUsers[user].caret = newCaret.copy();
     });
 
     // Add new version checkpoint
