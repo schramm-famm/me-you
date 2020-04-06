@@ -61,24 +61,19 @@ class DOMElement {
         // preceding and including the range's start container and end
         // container.
         const divs = this.getAllDivNodes();
-        let startCount = 0;
-        let endCount = 0;
+        divs.splice(0, 1); // The first div doesn't count as a new line
         divs.forEach((child) => {
           const relativeToStart = range.startContainer.compareDocumentPosition(child);
           const relativeToEnd = range.endContainer.compareDocumentPosition(child);
           if (relativeToStart === 0
             || relativeToStart & Node.DOCUMENT_POSITION_PRECEDING) {
             start += 1;
-            startCount += 1;
           }
           if (relativeToEnd === 0
             || relativeToEnd & Node.DOCUMENT_POSITION_PRECEDING) {
             end += 1;
-            endCount += 1;
           }
         });
-        console.log(startCount);
-        console.log(endCount);
       }
     }
     return new Caret(start, end);
@@ -129,6 +124,7 @@ class DOMElement {
     const divs = this.getAllDivNodes();
     let divCount = 0;
 
+    offset += 1; // Account for the div on the first line
     for (let n = 0; n < nodes.length; n += 1) {
       if (nodes[n].isEqualNode(divs[divCount])) {
         offset -= 1;
@@ -229,18 +225,16 @@ class DOMElement {
     }
     const range = document.createRange();
     range.setStart(startData.node, startData.offset);
-    const startY = range.getBoundingClientRect().top;
-    const startX = range.getBoundingClientRect().left;
+    let startY = range.getBoundingClientRect().top;
+    let startX = range.getBoundingClientRect().left;
 
     if (startY === 0 && startX === 0) {
-      parentNode.style.position = 'relative';
-      cursor.style.top = '1em';
-      cursor.style.left = '1em';
-    } else {
-      parentNode.style.position = 'static';
-      cursor.style.top = `${startY}px`;
-      cursor.style.left = `${startX}px`;
+      startY = startData.node.parentNode.getBoundingClientRect().top;
+      startX = startData.node.parentNode.getBoundingClientRect().left;
     }
+    parentNode.style.position = 'static';
+    cursor.style.top = `${startY}px`;
+    cursor.style.left = `${startX}px`;
 
     parentNode.append(cursor);
 
