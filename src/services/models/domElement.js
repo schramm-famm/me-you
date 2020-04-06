@@ -1,3 +1,4 @@
+/* eslint-disable no-bitwise */
 import Caret from './caret';
 
 class DOMElement {
@@ -55,25 +56,52 @@ class DOMElement {
         preCaretRange.selectNodeContents(this.el);
         preCaretRange.setEnd(range.endContainer, range.endOffset);
         end = preCaretRange.toString().length;
+
+        // Account for newlines by counting the number of top-level divs
+        // preceding and including the range's start container and end
+        // container.
+        const divs = this.getAllDivNodes();
+        let startCount = 0;
+        let endCount = 0;
+        divs.forEach((child) => {
+          const relativeToStart = range.startContainer.compareDocumentPosition(child);
+          const relativeToEnd = range.endContainer.compareDocumentPosition(child);
+          if (relativeToStart === 0
+            || relativeToStart & Node.DOCUMENT_POSITION_PRECEDING) {
+            start += 1;
+            startCount += 1;
+          }
+          if (relativeToEnd === 0
+            || relativeToEnd & Node.DOCUMENT_POSITION_PRECEDING) {
+            end += 1;
+            endCount += 1;
+          }
+        });
+        console.log(startCount);
+        console.log(endCount);
       }
     }
     return new Caret(start, end);
   }
 
   /**
-  * getAllTextNodes gets all of the nodes within the DOM Element that contain
-  * text.
+  * getAllNodes gets all of the nodes within the DOM Element.
   * Returns: Node[]
   */
-  getAllTextNodes() {
+  getAllNodes() {
     const a = [];
-    const walk = document.createTreeWalker(this.el, NodeFilter.SHOW_TEXT, null, false);
+    const walk = document.createTreeWalker(this.el, NodeFilter.SHOW_ALL, null, false);
     let n = walk.nextNode();
     while (n) {
       a.push(n);
       n = walk.nextNode();
     }
     return a;
+  }
+
+  getAllDivNodes() {
+    const allNodes = this.getAllNodes();
+    return allNodes.filter((node) => node.nodeName.toUpperCase() === 'DIV');
   }
 
   /**
@@ -83,7 +111,7 @@ class DOMElement {
   getTextSize() {
     const range = document.createRange();
     range.selectNodeContents(this.el);
-    return range.toString().length;
+    return range.toString().length + this.getAllDivNodes().length;
   }
 
   /**
@@ -97,19 +125,28 @@ class DOMElement {
   getCaretData(position) {
     let node;
     let offset = position;
-    const nodes = this.getAllTextNodes(this.el);
+    const nodes = this.getAllNodes();
+    const divs = this.getAllDivNodes();
+    let divCount = 0;
 
     for (let n = 0; n < nodes.length; n += 1) {
-      if (offset > nodes[n].nodeValue.length && nodes[n + 1]) {
+      if (nodes[n].isEqualNode(divs[divCount])) {
+        offset -= 1;
+        n += 1;
+        divCount += 1;
+      }
+
+      const nodeValue = nodes[n].nodeValue ? nodes[n].nodeValue : '';
+      if (offset > nodeValue.length && nodes[n + 1]) {
         // remove amount from the position, go to next node
-        offset -= nodes[n].nodeValue.length;
+        offset -= nodeValue.length;
       } else {
         node = nodes[n];
         break;
       }
     }
 
-    return { node, offset };
+    return { node, offset, newLines: divCount };
   }
 
   /**
