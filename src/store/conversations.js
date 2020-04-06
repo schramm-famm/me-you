@@ -346,6 +346,9 @@ const handleInput = (currState) => {
 
   el.removeAllHighlights();
 
+  if (content === '' || content === '<br>') {
+    el.setInnerHTML(`<div>${el.innerHTML}</div>`);
+  }
   const patches = dmp.patch_make(content, el.innerHTML);
 
   const newCaret = el.getCaretPosition();
