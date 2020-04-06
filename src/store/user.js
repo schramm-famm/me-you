@@ -20,7 +20,7 @@ const login = ({ dispatch, commit }, { email, password, path }) => {
     })
     .catch((error) => {
       commit('loginFailure', error);
-      dispatch('alert/error', error, { root: true });
+      dispatch('alert/error', { key: 'login', message: error }, { root: true });
     });
 };
 
@@ -39,7 +39,7 @@ const register = ({ dispatch, commit }, { name, email, password }) => {
     })
     .catch((error) => {
       commit('registerFailure', error);
-      dispatch('alert/error', error, { root: true });
+      dispatch('alert/error', { key: 'register', message: error }, { root: true });
     });
 };
 
@@ -52,7 +52,7 @@ const getUser = ({ dispatch, commit }) => {
     })
     .catch((error) => {
       commit('getUserFailure', error);
-      dispatch('alert/error', error, { root: true });
+      dispatch('alert/error', { key: 'getUser', message: error }, { root: true });
     });
 };
 

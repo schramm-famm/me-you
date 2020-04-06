@@ -18,13 +18,16 @@
         />
       </div>
       <div class="form-group">
-          <button type="submit" :disabled="status.createRequest">
-            Create Conversation
-          </button>
+        <button type="submit" :disabled="status.createRequest">
+          Create Conversation
+        </button>
       </div>
     </form>
-    <p v-if="alert.type === 'alert-danger'" class="error">
-      {{ alert.message }}
+    <p v-if="alert.createConv && alert.createConv.type === 'alert-danger'" class="error">
+      {{ alert.createConv.message }}
+    </p>
+    <p v-if="alert.createConv && alert.createConv.type === 'alert-success'" class="success">
+      {{ alert.createConv.message }}
     </p>
   </div>
 </template>
@@ -39,9 +42,14 @@ const data = () => ({
   missingName: false,
 });
 
+function destroyed() {
+  this.clear('createConv');
+}
+
 export default {
   name: 'CreateConversationMenu',
   data,
+  destroyed,
   computed: {
     ...mapState('conversations', ['status']),
     ...mapState({
@@ -50,7 +58,7 @@ export default {
   },
   methods: {
     ...mapActions('conversations', ['create']),
-    ...mapActions('alert', ['error']),
+    ...mapActions('alert', ['clear']),
     handleCreate() {
       this.submitted = true;
       const { name, description } = this;

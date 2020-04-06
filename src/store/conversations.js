@@ -1,6 +1,6 @@
 import DiffMatchPatch from 'diff-match-patch';
 
-import { convService, wsService } from '../services';
+import { convService, userService, wsService } from '../services';
 import {
   WSException,
   Caret,
@@ -92,10 +92,11 @@ const getAll = ({ dispatch, commit }) => {
       });
 
       commit('getAllSuccess', { conversations, conversationsSorted });
+      dispatch('alert/success', { key: 'getAllConv', message: 'Got all conversations' }, { root: true });
     })
     .catch((error) => {
       commit('getAllFailure');
-      dispatch('alert/error', error, { root: true });
+      dispatch('alert/error', { key: 'getAllConv', message: error }, { root: true });
     });
 };
 
@@ -106,13 +107,28 @@ const create = ({ dispatch, commit }, { name, description, avatarURL }) => {
     .then(() => dispatch('getAll'))
     .then(() => {
       commit('createSuccess');
+      dispatch('alert/success', { key: 'createConv', message: 'Created conversation' }, { root: true });
     })
     .catch((error) => {
       commit('createFailure');
-      dispatch('alert/error', error, { root: true });
+      dispatch('alert/error', { key: 'createConv', message: error }, { root: true });
     });
 };
 
+const addUser = ({ dispatch, commit }, { conversationID, email, role }) => {
+  commit('addUserRequest');
+
+  userService.getUserByEmail(email)
+    .then((json) => convService.addUser(conversationID, json.id, role))
+    .then(() => {
+      commit('addUserSuccess');
+      dispatch('alert/success', { key: 'addUserToConv', message: 'Added a user to conversation' }, { root: true });
+    })
+    .catch((error) => {
+      commit('addUserFailure');
+      dispatch('alert/error', { key: 'addUserToConv', message: error }, { root: true });
+    });
+};
 
 const open = ({ dispatch, commit }, { id, token, el }) => {
   commit('openRequest', id);
@@ -140,7 +156,7 @@ const open = ({ dispatch, commit }, { id, token, el }) => {
           } else {
             ws.close(WSException.INTERNAL_ERROR, error.message);
           }
-          dispatch('alert/error', error.message, { root: true });
+          dispatch('alert/error', { key: 'openWS', message: error.message }, { root: true });
         }
       };
       ws.onerror = (e) => {
@@ -151,13 +167,14 @@ const open = ({ dispatch, commit }, { id, token, el }) => {
     .catch((error) => {
       console.log(error);
       commit('openFailure');
-      dispatch('alert/error', error, { root: true });
+      dispatch('alert/error', { key: 'openWS', message: error }, { root: true });
     });
 };
 
 const actions = {
   getAll,
   create,
+  addUser,
   open,
 };
 
@@ -201,6 +218,24 @@ const createSuccess = (currState) => {
 
 const createFailure = (currState) => {
   console.log('createFailure');
+  const newState = currState;
+  newState.status = {};
+};
+
+const addUserRequest = (currState) => {
+  console.log('addUserRequest');
+  const newState = currState;
+  newState.status = { addingUser: true };
+};
+
+const addUserSuccess = (currState) => {
+  console.log('addUserSuccess');
+  const newState = currState;
+  newState.status = { addedUser: true };
+};
+
+const addUserFailure = (currState) => {
+  console.log('addUserFailure');
   const newState = currState;
   newState.status = {};
 };
@@ -389,6 +424,9 @@ const mutations = {
   createRequest,
   createSuccess,
   createFailure,
+  addUserRequest,
+  addUserSuccess,
+  addUserFailure,
   getOneSuccess,
   updateDisplayTime,
   openRequest,

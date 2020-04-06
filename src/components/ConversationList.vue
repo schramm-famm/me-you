@@ -11,7 +11,7 @@
       </div>
     </div>
     <MoreMenu v-show="more" />
-    <CreateConversationMenu v-show="createConversation"/>
+    <CreateConversationMenu v-if="createConversation"/>
     <div class="conversation-list">
       <ConversationItem
         v-for="id in conversationsSorted"

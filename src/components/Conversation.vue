@@ -14,8 +14,12 @@
             </h2>
           </div>
         </div>
+        <div class="header-options">
+          <AddUser v-on:click="addUser = !addUser"/>
+        </div>
       </div>
     </div>
+    <AddUserMenu v-show="addUser"/>
     <div id="conversation-container">
       <div
         id="conversation-body"
@@ -31,29 +35,12 @@
 <script>
 import { mapState, mapActions, mapMutations } from 'vuex';
 import { WSException, DOMElement } from '../services/models';
+import AddUser from '../assets/person_add-24px.svg';
+import AddUserMenu from './AddUserMenu.vue';
 
-/*
 const data = () => ({
-  ws: null, // WebSocket object
-  conversation: {}, // Conversation metadata
-  checkpoint: {
-    version: {}, // Map, version -> checkpoint
-    latest: -1, // Latest checkpoint version
-    content: '', // Latest checkpoint content
-  },
-  version: -1, // Current conversation version
-  content: '', // Current conversation content
-  textSize: 0, // Current conversation content text size
-  patchBuffer: [], // Buffer of patches awaiting acknowledgement
-  activeUsers: {}, // Map, userID -> caret position
-  caret: { // Current client caret position
-    start: 0,
-    end: 0,
-  },
-  colourList: userColours.slice(), // List of colours to use for active users
-  backend: utilsService.backend,
+  addUser: false,
 });
-*/
 
 /* Vue instance computed functions */
 function activeConversation() {
@@ -69,6 +56,11 @@ function mounted() {
 
 export default {
   name: 'Conversation',
+  components: {
+    AddUser,
+    AddUserMenu,
+  },
+  data,
   mounted,
   computed: {
     ...mapState('user', ['user']),

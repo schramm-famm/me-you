@@ -21,14 +21,14 @@
         <div v-show="submitted && !password" class="error">Password is required</div>
       </div>
       <div class="form-group">
-          <button type="submit" :disabled="status.loggingIn">
-            Login
-          </button>
-          <router-link to="/register">Register</router-link>
+        <button type="submit" :disabled="status.loggingIn">
+          Login
+        </button>
+        <router-link to="/register">Register</router-link>
       </div>
     </form>
-    <p v-if="alert.type === 'alert-danger'" class="error">
-      {{ alert.message }}
+    <p v-if="alert.login && alert.login.type === 'alert-danger'" class="error">
+      {{ alert.login.message }}
     </p>
   </div>
 </template>

@@ -5,9 +5,9 @@ const logout = (callback) => {
   if (callback) callback();
 };
 
-const handleResponse = (response) => response.text().then((text) => {
+const handleResponse = (response, auth = true) => response.text().then((text) => {
   if (!response.ok) {
-    if (response.status === 401) {
+    if (auth && response.status === 401) {
       logout();
       window.location.reload(true);
     }
