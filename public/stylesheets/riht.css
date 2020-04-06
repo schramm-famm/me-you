@@ -204,6 +204,10 @@ h2 {
   padding: .25em 0px;
 }
 
+.popup-menu p {
+  text-align: center;
+}
+
 .popup-menu > * {
   padding: .5em;
   width: 100%;
