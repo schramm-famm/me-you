@@ -318,7 +318,7 @@ const handleSelectionChange = (currState) => {
   const newState = currState;
   const { conversation } = newState;
 
-  if (!conversation.el.isActive()) {
+  if (!conversation.el.active) {
     return;
   }
 
@@ -362,15 +362,14 @@ const handleInput = (currState) => {
 
   el.removeAllHighlights();
 
-  if (content === '' || content === '<br>') {
-    el.setInnerHTML(`<div>${el.innerHTML}</div>`);
-    const newTextSize = el.getTextSize();
-    el.setCaret({ start: newTextSize, end: newTextSize });
-  }
-  const patches = dmp.patch_make(content, el.innerHTML);
-
   const newCaret = el.getCaretPosition();
   const newTextSize = el.getTextSize();
+
+  if (content === '' || content === '<br>') {
+    el.setInnerHTML(`<div>${el.innerHTML}</div>`);
+    el.setCaret(newCaret);
+  }
+  const patches = dmp.patch_make(content, el.innerHTML);
 
   const delta = new Delta(
     newCaret.start - caret.start,

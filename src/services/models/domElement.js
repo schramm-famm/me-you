@@ -10,11 +10,15 @@ class DOMElement {
   */
   constructor(el) {
     this.el = el;
+    this.isActive = false;
   }
 
-  isActive() {
-    const doc = this.el.ownerDocument || this.el.document;
-    return doc.activeElement === this.el;
+  get active() {
+    return this.isActive;
+  }
+
+  set active(active) {
+    this.isActive = active;
   }
 
   /**
@@ -33,6 +37,15 @@ class DOMElement {
   */
   setInnerHTML(content) {
     this.el.innerHTML = content;
+  }
+
+  /**
+  * contains
+  * Parameters:
+  *   content: string
+  */
+  contains(el) {
+    return this.el.contains(el);
   }
 
   /**

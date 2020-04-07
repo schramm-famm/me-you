@@ -131,7 +131,9 @@ class Update extends WSMessage {
 
     // Set the client's caret in the DOM
     state.caret = selfCaret;
-    state.el.setCaret(state.caret);
+    if (state.el.active) {
+      state.el.setCaret(state.caret);
+    }
 
     // Set the active users' carts in the DOM
     Object.values(state.activeUsers).forEach((activeUser) => {

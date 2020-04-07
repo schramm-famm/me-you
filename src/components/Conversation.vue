@@ -1,5 +1,5 @@
 <template>
-  <div class="conversation">
+  <div class="conversation" v-on:click="handleClick">
     <div class="header">
       <div class="header-content">
         <div class="header-info">
@@ -15,11 +15,11 @@
           </div>
         </div>
         <div class="header-options">
-          <AddUser v-on:click="addUser = !addUser"/>
+          <AddUser id="add-user-btn" v-on:click="addUser = !addUser"/>
         </div>
       </div>
     </div>
-    <AddUserMenu v-show="addUser"/>
+    <AddUserMenu v-if="addUser"/>
     <div id="conversation-container">
       <div
         id="conversation-body"
@@ -98,6 +98,16 @@ export default {
       'handleSelectionChange',
       'close',
     ]),
+    handleClick(e) {
+      this.conversation.el.active = this.conversation.el.contains(e.target);
+      if (this.addUser) {
+        const btn = this.$el.querySelector('#add-user-btn');
+        const menu = this.$el.querySelector('#add-user-menu');
+        if (!btn.contains(e.target) && !menu.contains(e.target)) {
+          this.addUser = false;
+        }
+      }
+    },
   },
 };
 </script>
