@@ -1,43 +1,82 @@
 <template>
   <div class="side">
     <div class="header">
-      <h1>{{ username }}</h1>
+      <div class="header-content">
+        <h1 v-show="!user.avatar_url">{{ user.name }}</h1>
+        <img v-show="user.avatar_url" class="avatar" v-bind:src="user.avatar_url">
+        <div class="header-options">
+          <Add v-on:click="createConversation = !createConversation"/>
+          <More v-on:click="more = !more"/>
+        </div>
+      </div>
     </div>
+    <MoreMenu v-show="more" />
+    <CreateConversationMenu v-if="createConversation"/>
     <div class="conversation-list">
       <ConversationItem
-        v-for="conversation in conversations"
-        :key="conversation.id"
-        :id="conversation.id"
+        v-for="id in conversationsSorted"
+        :key="id"
+        :id="id"
       ></ConversationItem>
+      <div class="welcome" v-show="!conversationsSorted.length">
+        Click the '+' to create a conversation!
+      </div>
     </div>
   </div>
 </template>
 
 <script>
+import { mapState, mapActions, mapMutations } from 'vuex';
 import ConversationItem from './ConversationItem.vue';
+import MoreMenu from './MoreMenu.vue';
+import Add from '../assets/add-24px.svg';
+import CreateConversationMenu from './CreateConversationMenu.vue';
+import More from '../assets/more_vert-24px.svg';
 
-function username() {
-  return this.$store.state.user.name;
+const data = () => ({
+  more: false,
+  createConversation: false,
+  intervalID: 0,
+});
+
+function created() {
+  this.getAll();
+  this.getUser();
+  this.intervalID = window.setInterval(this.updateDisplayTime, 60000);
 }
 
-function conversations() {
-  return this.$store.state.conversations;
+function destroyed() {
+  // Stop updating conversation display times
+  window.clearInterval(this.intervalID);
 }
 
 export default {
   name: 'ConversationList',
   components: {
     ConversationItem,
+    Add,
+    More,
+    MoreMenu,
+    CreateConversationMenu,
   },
+  data,
+  created,
+  destroyed,
   computed: {
-    username,
-    conversations,
+    ...mapState('user', ['user']),
+    ...mapState('conversations', ['conversationsSorted']),
+  },
+  methods: {
+    ...mapActions('conversations', ['getAll']),
+    ...mapActions('user', ['getUser']),
+    ...mapMutations('conversations', ['updateDisplayTime']),
   },
 };
 </script>
 
 <style>
 .side {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;

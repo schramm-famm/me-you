@@ -10,6 +10,8 @@
 </template>
 
 <script>
+import { mapState } from 'vuex';
+
 const data = () => ({
   conversation: null,
 });
@@ -22,10 +24,6 @@ function setConversation() {
 
 function activeConversation() {
   return parseInt(this.$route.params.id, 10);
-}
-
-function conversations() {
-  return this.$store.state.conversations;
 }
 
 function created() {
@@ -41,12 +39,12 @@ export default {
     setConversation,
   },
   computed: {
+    ...mapState('conversations', ['conversations']),
     activeConversation,
-    conversations,
   },
   watch: {
     conversations() {
-      this.conversation = this.conversations[this.activeConversation];
+      this.conversation = this.conversations[this.$props.id];
     },
   },
 };
