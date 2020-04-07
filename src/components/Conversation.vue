@@ -20,7 +20,7 @@
       </div>
     </div>
     <AddUserMenu v-if="addUser"/>
-    <div id="conversation-container">
+    <div id="conversation-container" v-on:scroll="handleScroll">
       <div
         id="conversation-body"
         class="body"
@@ -96,6 +96,7 @@ export default {
       'setDOMElement',
       'handleInput',
       'handleSelectionChange',
+      'handleScroll',
       'close',
     ]),
     handleClick(e) {

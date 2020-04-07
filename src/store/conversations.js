@@ -417,6 +417,14 @@ const handleInput = (currState) => {
   };
 };
 
+const handleScroll = (currState) => {
+  const { activeUsers, el } = currState.conversation;
+  Object.entries(activeUsers).forEach(([id, activeUser]) => {
+    el.removeActiveUserCaret(id);
+    el.setActiveUserCaret(activeUser);
+  });
+};
+
 const handleMessage = (currState, e) => {
   console.log('handleMessage');
   console.log(e);
@@ -463,6 +471,7 @@ const mutations = {
   handleMessage,
   handleInput,
   handleSelectionChange,
+  handleScroll,
   close,
   closeSuccess,
 };
