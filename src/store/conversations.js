@@ -318,7 +318,7 @@ const handleSelectionChange = (currState) => {
   const newState = currState;
   const { conversation } = newState;
 
-  if (!conversation.el.active) {
+  if (!conversation.el.contains(document.getSelection().anchorNode)) {
     return;
   }
 
@@ -350,7 +350,6 @@ const handleInput = (currState) => {
   const newState = currState;
   const {
     el,
-    content,
     dmp,
     caret,
     textSize,
@@ -358,7 +357,7 @@ const handleInput = (currState) => {
     patchBuffer,
     activeUsers,
   } = newState.conversation;
-  let { version } = newState.conversation;
+  let { version, content } = newState.conversation;
 
   el.removeAllHighlights();
 
@@ -370,6 +369,7 @@ const handleInput = (currState) => {
     el.setCaret(newCaret);
   }
   const patches = dmp.patch_make(content, el.innerHTML);
+  content = el.innerHTML;
 
   const delta = new Delta(
     newCaret.start - caret.start,
@@ -413,7 +413,7 @@ const handleInput = (currState) => {
     activeUsers,
     caret: newCaret,
     textSize: newTextSize,
-    content: el.innerHTML,
+    content,
   };
 };
 

@@ -301,7 +301,7 @@ class DOMElement {
     }
     const highlight = this.el.querySelector(`#highlight-${id}`);
     if (highlight) {
-      this.el.removeHighlight(highlight);
+      this.removeHighlight(highlight);
     }
   }
 }
