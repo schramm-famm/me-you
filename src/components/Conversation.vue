@@ -54,6 +54,10 @@ function mounted() {
   this.open({ id: this.activeConversation, token: this.user.token, el });
 }
 
+function destroyed() {
+  document.onselectionchange = () => {};
+}
+
 export default {
   name: 'Conversation',
   components: {
@@ -62,6 +66,7 @@ export default {
   },
   data,
   mounted,
+  destroyed,
   computed: {
     ...mapState('user', ['user']),
     ...mapState('conversations', ['conversations', 'conversation', 'status']),

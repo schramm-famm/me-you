@@ -8,6 +8,9 @@ import {
   Delta,
   Update,
 } from '../services/models';
+import router from '../router';
+
+const weekDays = Object.freeze(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
 
 const conversationState = {
   dmp: new DiffMatchPatch(),
@@ -65,13 +68,13 @@ const getDisplayTime = (lastModifiedStr) => {
       }
 
       const meridian = lmHours < 12 ? 'A.M.' : 'P.M.';
-      const hours = lmHours === 0 ? 12 : lmHours % 12;
+      const hours = lmHours % 12 === 0 ? 12 : lmHours % 12;
       const minutes = lmMinutes < 10 ? `0${lmMinutes}` : lmMinutes;
 
       return `${hours}:${minutes} ${meridian}`;
     }
 
-    return lastModifiedDate.getDay();
+    return weekDays[lastModifiedDate.getDay()];
   }
 
   return `${lmYear}-${lmMonth}-${lmDate}`;
@@ -131,6 +134,7 @@ const addUser = ({ dispatch, commit }, { conversationID, email, role }) => {
 };
 
 const open = ({ dispatch, commit }, { id, token, el }) => {
+  dispatch('alert/clear', 'openWS', { root: true });
   commit('openRequest', id);
 
   wsService.connect(id)
@@ -156,11 +160,23 @@ const open = ({ dispatch, commit }, { id, token, el }) => {
           } else {
             ws.close(WSException.INTERNAL_ERROR, error.message);
           }
-          dispatch('alert/error', { key: 'openWS', message: error.message }, { root: true });
+          dispatch(
+            'alert/error',
+            { key: 'openWS', message: 'Conversation closed due to error.' },
+            { root: true },
+          );
+          router.push('/conversations');
         }
       };
       ws.onerror = (e) => {
-        console.log(`ERROR: ${e.data}`);
+        console.log(e);
+        const errMsg = 'Error occurred in conversation connection.';
+        dispatch(
+          'alert/error',
+          { key: 'openWS', message: errMsg },
+          { root: true },
+        );
+        router.push('/conversations');
       };
       return ws;
     })
