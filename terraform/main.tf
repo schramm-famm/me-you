@@ -43,8 +43,8 @@ EOF
 
 resource "aws_iam_server_certificate" "me-you" {
   name = "${var.name}-me-you"
-  certificate_body = "${file("${var.cert}")}"
-  private_key      = "${file("${var.cert_key}")}"
+  certificate_body = file(var.cert)
+  private_key      = file(var.cert_key)
 }
 
 resource "aws_elb" "me-you" {
@@ -72,5 +72,5 @@ resource "aws_ecs_service" "me-you" {
     container_port = 80
   }
 
-  desired_count = 1
+  desired_count = container_count
 }
