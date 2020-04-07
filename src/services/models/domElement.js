@@ -10,11 +10,15 @@ class DOMElement {
   */
   constructor(el) {
     this.el = el;
+    this.isActive = false;
   }
 
-  isActive() {
-    const doc = this.el.ownerDocument || this.el.document;
-    return doc.activeElement === this.el;
+  get active() {
+    return this.isActive;
+  }
+
+  set active(active) {
+    this.isActive = active;
   }
 
   /**
@@ -33,6 +37,15 @@ class DOMElement {
   */
   setInnerHTML(content) {
     this.el.innerHTML = content;
+  }
+
+  /**
+  * contains
+  * Parameters:
+  *   content: string
+  */
+  contains(el) {
+    return this.el.contains(el);
   }
 
   /**
@@ -237,6 +250,7 @@ class DOMElement {
     range.setStart(startData.node, startData.offset);
     let startY = range.getBoundingClientRect().top;
     let startX = range.getBoundingClientRect().left;
+    let outOfView = false;
 
     if (startData.node === this.el) {
       parentNode.style.position = 'relative';
@@ -250,9 +264,21 @@ class DOMElement {
       parentNode.style.position = 'static';
       cursor.style.top = `${startY}px`;
       cursor.style.left = `${startX}px`;
+      const minY = parentNode.getBoundingClientRect().top;
+      const cursorHeight = 1.25 * parseFloat(window.getComputedStyle(parentNode).getPropertyValue('font-size'));
+      if (startY < minY) {
+        if (startY + cursorHeight > minY) {
+          cursor.style.top = `${minY}px`;
+          cursor.style.height = `${cursorHeight - (minY - startY)}px`;
+        } else {
+          outOfView = true;
+        }
+      }
     }
 
-    parentNode.append(cursor);
+    if (!outOfView) {
+      parentNode.append(cursor);
+    }
 
     let highlight = this.el.querySelector(`#highlight-${id}`);
     if (!highlight) {
@@ -288,7 +314,7 @@ class DOMElement {
     }
     const highlight = this.el.querySelector(`#highlight-${id}`);
     if (highlight) {
-      this.el.removeHighlight(highlight);
+      this.removeHighlight(highlight);
     }
   }
 }

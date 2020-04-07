@@ -1,5 +1,5 @@
 <template>
-  <div class="popup-menu">
+  <div id="add-user-menu" class="popup-menu">
     <form @submit.prevent="handleAddUser">
       <div class="form-group" v-bind:class="{ invalid: submitted && missingEmail }">
         <input

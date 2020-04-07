@@ -318,7 +318,7 @@ const handleSelectionChange = (currState) => {
   const newState = currState;
   const { conversation } = newState;
 
-  if (!conversation.el.isActive()) {
+  if (!conversation.el.contains(document.getSelection().anchorNode)) {
     return;
   }
 
@@ -350,7 +350,6 @@ const handleInput = (currState) => {
   const newState = currState;
   const {
     el,
-    content,
     dmp,
     caret,
     textSize,
@@ -358,19 +357,19 @@ const handleInput = (currState) => {
     patchBuffer,
     activeUsers,
   } = newState.conversation;
-  let { version } = newState.conversation;
+  let { version, content } = newState.conversation;
 
   el.removeAllHighlights();
 
-  if (content === '' || content === '<br>') {
-    el.setInnerHTML(`<div>${el.innerHTML}</div>`);
-    const newTextSize = el.getTextSize();
-    el.setCaret({ start: newTextSize, end: newTextSize });
-  }
-  const patches = dmp.patch_make(content, el.innerHTML);
-
   const newCaret = el.getCaretPosition();
   const newTextSize = el.getTextSize();
+
+  if (content === '' || content === '<br>') {
+    el.setInnerHTML(`<div>${el.innerHTML}</div>`);
+    el.setCaret(newCaret);
+  }
+  const patches = dmp.patch_make(content, el.innerHTML);
+  content = el.innerHTML;
 
   const delta = new Delta(
     newCaret.start - caret.start,
@@ -414,8 +413,16 @@ const handleInput = (currState) => {
     activeUsers,
     caret: newCaret,
     textSize: newTextSize,
-    content: el.innerHTML,
+    content,
   };
+};
+
+const handleScroll = (currState) => {
+  const { activeUsers, el } = currState.conversation;
+  Object.entries(activeUsers).forEach(([id, activeUser]) => {
+    el.removeActiveUserCaret(id);
+    el.setActiveUserCaret(activeUser);
+  });
 };
 
 const handleMessage = (currState, e) => {
@@ -464,6 +471,7 @@ const mutations = {
   handleMessage,
   handleInput,
   handleSelectionChange,
+  handleScroll,
   close,
   closeSuccess,
 };

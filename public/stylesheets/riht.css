@@ -77,6 +77,10 @@ h2 {
   align-items: center;
 }
 
+.landing-page .form-group > * {
+  font-size: 14pt;
+}
+
 .error {
   font-size: 10pt;
   color: var(--red);
@@ -109,7 +113,6 @@ h2 {
 }
 
 .form-group > input {
-  font-size: 14pt;
   font-weight: lighter;
   border-radius: 0.25em;
   border: 1px solid lightgrey;
@@ -117,7 +120,6 @@ h2 {
 }
 
 .form-group > a, .form-group > button {
-  font-size: 14pt;
   text-align: center;
   margin: .25em;
   padding: .5em;
@@ -206,6 +208,10 @@ h2 {
 
 .popup-menu p {
   text-align: center;
+}
+
+.popup-menu * {
+  font-size: 10pt;
 }
 
 .popup-menu > * {

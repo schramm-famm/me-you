@@ -1,17 +1,17 @@
 <template>
-  <div class="side">
+  <div class="side" v-on:click="handleClick">
     <div class="header">
       <div class="header-content">
         <h1 v-show="!user.avatar_url">{{ user.name }}</h1>
         <img v-show="user.avatar_url" class="avatar" v-bind:src="user.avatar_url">
         <div class="header-options">
-          <Add v-on:click="createConversation = !createConversation"/>
-          <More v-on:click="more = !more"/>
+          <Add id="create-conv-btn" v-on:click="createConversation = !createConversation"/>
+          <More id="more-btn" v-on:click="more = !more"/>
         </div>
       </div>
     </div>
-    <MoreMenu v-show="more" />
-    <CreateConversationMenu v-if="createConversation"/>
+    <MoreMenu id="more-menu" v-show="more"/>
+    <CreateConversationMenu id="create-conv-menu" v-if="createConversation"/>
     <div class="conversation-list">
       <ConversationItem
         v-for="id in conversationsSorted"
@@ -70,6 +70,22 @@ export default {
     ...mapActions('conversations', ['getAll']),
     ...mapActions('user', ['getUser']),
     ...mapMutations('conversations', ['updateDisplayTime']),
+    handleClick(e) {
+      if (this.more) {
+        const btn = this.$el.querySelector('#more-btn');
+        const menu = this.$el.querySelector('#more-menu');
+        if (!btn.contains(e.target) && !menu.contains(e.target)) {
+          this.more = false;
+        }
+      }
+      if (this.createConversation) {
+        const btn = this.$el.querySelector('#create-conv-btn');
+        const menu = this.$el.querySelector('#create-conv-menu');
+        if (!btn.contains(e.target) && !menu.contains(e.target)) {
+          this.createConversation = false;
+        }
+      }
+    },
   },
 };
 </script>
