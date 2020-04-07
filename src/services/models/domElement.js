@@ -1,4 +1,5 @@
 /* eslint-disable no-bitwise */
+/* eslint-disable no-continue */
 import Caret from './caret';
 
 class DOMElement {
@@ -61,7 +62,9 @@ class DOMElement {
         // preceding and including the range's start container and end
         // container.
         const divs = this.getAllDivNodes();
-        divs.splice(0, 1); // The first div doesn't count as a new line
+        if (divs.length > 0) {
+          divs.splice(0, 1); // The first div doesn't count as a new line
+        }
         divs.forEach((child) => {
           const relativeToStart = range.startContainer.compareDocumentPosition(child);
           const relativeToEnd = range.endContainer.compareDocumentPosition(child);
@@ -110,7 +113,8 @@ class DOMElement {
   getTextSize() {
     const range = document.createRange();
     range.selectNodeContents(this.el);
-    return range.toString().length + this.getAllDivNodes().length;
+    const divs = this.getAllDivNodes();
+    return range.toString().length + (divs.length > 0 ? divs.length - 1 : 0);
   }
 
   /**
@@ -128,12 +132,14 @@ class DOMElement {
     const divs = this.getAllDivNodes();
     let divCount = 0;
 
-    offset += 1; // Account for the div on the first line
+    if (divs.length > 0) {
+      offset += 1; // Account for the div on the first line
+    }
     for (let n = 0; n < nodes.length; n += 1) {
       if (nodes[n].isEqualNode(divs[divCount])) {
         offset -= 1;
-        n += 1;
         divCount += 1;
+        continue;
       }
 
       const nodeValue = nodes[n].nodeValue ? nodes[n].nodeValue : '';
@@ -232,13 +238,19 @@ class DOMElement {
     let startY = range.getBoundingClientRect().top;
     let startX = range.getBoundingClientRect().left;
 
-    if (startY === 0 && startX === 0) {
-      startY = startData.node.parentNode.getBoundingClientRect().top;
-      startX = startData.node.parentNode.getBoundingClientRect().left;
+    if (startData.node === this.el) {
+      parentNode.style.position = 'relative';
+      cursor.style.top = '1em';
+      cursor.style.left = '1em';
+    } else {
+      if (startY === 0 && startX === 0) {
+        startY = startData.node.getBoundingClientRect().top;
+        startX = startData.node.getBoundingClientRect().left;
+      }
+      parentNode.style.position = 'static';
+      cursor.style.top = `${startY}px`;
+      cursor.style.left = `${startX}px`;
     }
-    parentNode.style.position = 'static';
-    cursor.style.top = `${startY}px`;
-    cursor.style.left = `${startX}px`;
 
     parentNode.append(cursor);
 

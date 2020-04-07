@@ -348,6 +348,8 @@ const handleInput = (currState) => {
 
   if (content === '' || content === '<br>') {
     el.setInnerHTML(`<div>${el.innerHTML}</div>`);
+    const newTextSize = el.getTextSize();
+    el.setCaret({ start: newTextSize, end: newTextSize });
   }
   const patches = dmp.patch_make(content, el.innerHTML);
 
@@ -421,7 +423,7 @@ const closeSuccess = (currState, e) => {
 
   const newState = currState;
   Object.values(newState.conversation.activeUsers).forEach((activeUser) => {
-    newState.conversation.el.removeActiveUserCaret(activeUser);
+    newState.conversation.el.removeActiveUserCaret(activeUser.id);
   });
 
   newState.conversation = { ...conversationState };
