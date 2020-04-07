@@ -1,3 +1,5 @@
+/* eslint-disable no-bitwise */
+/* eslint-disable no-continue */
 import Caret from './caret';
 
 class DOMElement {
@@ -55,19 +57,38 @@ class DOMElement {
         preCaretRange.selectNodeContents(this.el);
         preCaretRange.setEnd(range.endContainer, range.endOffset);
         end = preCaretRange.toString().length;
+
+        // Account for newlines by counting the number of top-level divs
+        // preceding and including the range's start container and end
+        // container.
+        const divs = this.getAllDivNodes();
+        if (divs.length > 0) {
+          divs.splice(0, 1); // The first div doesn't count as a new line
+        }
+        divs.forEach((child) => {
+          const relativeToStart = range.startContainer.compareDocumentPosition(child);
+          const relativeToEnd = range.endContainer.compareDocumentPosition(child);
+          if (relativeToStart === 0
+            || relativeToStart & Node.DOCUMENT_POSITION_PRECEDING) {
+            start += 1;
+          }
+          if (relativeToEnd === 0
+            || relativeToEnd & Node.DOCUMENT_POSITION_PRECEDING) {
+            end += 1;
+          }
+        });
       }
     }
     return new Caret(start, end);
   }
 
   /**
-  * getAllTextNodes gets all of the nodes within the DOM Element that contain
-  * text.
+  * getAllNodes gets all of the nodes within the DOM Element.
   * Returns: Node[]
   */
-  getAllTextNodes() {
+  getAllNodes() {
     const a = [];
-    const walk = document.createTreeWalker(this.el, NodeFilter.SHOW_TEXT, null, false);
+    const walk = document.createTreeWalker(this.el, NodeFilter.SHOW_ALL, null, false);
     let n = walk.nextNode();
     while (n) {
       a.push(n);
@@ -77,13 +98,23 @@ class DOMElement {
   }
 
   /**
+   * getAllDivNodes gets all of the <div> nodes within the DOM Element.
+   * Returns: Node[]
+   */
+  getAllDivNodes() {
+    const allNodes = this.getAllNodes();
+    return allNodes.filter((node) => node.nodeName.toUpperCase() === 'DIV');
+  }
+
+  /**
   * getTextSize gets the total size of only the text nodes in the DOM Element.
   * Returns: int, total size of text nodes
   */
   getTextSize() {
     const range = document.createRange();
     range.selectNodeContents(this.el);
-    return range.toString().length;
+    const divs = this.getAllDivNodes();
+    return range.toString().length + (divs.length > 0 ? divs.length - 1 : 0);
   }
 
   /**
@@ -97,12 +128,24 @@ class DOMElement {
   getCaretData(position) {
     let node;
     let offset = position;
-    const nodes = this.getAllTextNodes(this.el);
+    const nodes = this.getAllNodes();
+    const divs = this.getAllDivNodes();
+    let divCount = 0;
 
+    if (divs.length > 0) {
+      offset += 1; // Account for the div on the first line
+    }
     for (let n = 0; n < nodes.length; n += 1) {
-      if (offset > nodes[n].nodeValue.length && nodes[n + 1]) {
+      if (nodes[n].isEqualNode(divs[divCount])) {
+        offset -= 1;
+        divCount += 1;
+        continue;
+      }
+
+      const nodeValue = nodes[n].nodeValue ? nodes[n].nodeValue : '';
+      if (offset > nodeValue.length && nodes[n + 1]) {
         // remove amount from the position, go to next node
-        offset -= nodes[n].nodeValue.length;
+        offset -= nodeValue.length;
       } else {
         node = nodes[n];
         break;
@@ -192,14 +235,18 @@ class DOMElement {
     }
     const range = document.createRange();
     range.setStart(startData.node, startData.offset);
-    const startY = range.getBoundingClientRect().top;
-    const startX = range.getBoundingClientRect().left;
+    let startY = range.getBoundingClientRect().top;
+    let startX = range.getBoundingClientRect().left;
 
-    if (startY === 0 && startX === 0) {
+    if (startData.node === this.el) {
       parentNode.style.position = 'relative';
       cursor.style.top = '1em';
       cursor.style.left = '1em';
     } else {
+      if (startY === 0 && startX === 0) {
+        startY = startData.node.getBoundingClientRect().top;
+        startX = startData.node.getBoundingClientRect().left;
+      }
       parentNode.style.position = 'static';
       cursor.style.top = `${startY}px`;
       cursor.style.left = `${startX}px`;
