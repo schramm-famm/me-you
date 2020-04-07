@@ -72,5 +72,5 @@ resource "aws_ecs_service" "me-you" {
     container_port = 80
   }
 
-  desired_count = container_count
+  desired_count = var.container_count
 }
